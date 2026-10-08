@@ -787,7 +787,9 @@ body.sfx-intro-on #main { opacity: 0; }
 .sfx-weather[data-mood="aurora"] .aur { opacity: .9; }
 .sfx-weather[data-mood="aurora"] .a2 { opacity: .6; }
 /* hype: the whole sky breathes with the beat */
-body[data-sfx-mood="hype"] .Root__top-container { filter: brightness(calc(1 + .25 * var(--beat, 0))); }
+/* pulse the star layer only: a filter on .Root__top-container would become the containing block
+   for the fixed dock and throw it off-screen */
+body[data-sfx-mood="hype"] .starrynight-bg-container { filter: brightness(calc(1 + .6 * var(--beat, 0))); }
 
 /* ---------- Page transitions ---------- */
 .Root__main-view.sfx-page-in { animation: sfx-page-in 520ms cubic-bezier(.2,.8,.2,1); }
@@ -816,7 +818,7 @@ body[data-sfx-mood="hype"] .Root__top-container { filter: brightness(calc(1 + .2
 /* ---------- Effect switches (palette menu) ---------- */
 body.sfx-off-gold .sfx-gold-layer, body.sfx-off-weather .sfx-weather,
 body.sfx-off-dust .sfx-dust, body.sfx-off-planet .sfx-planet { display: none !important; }
-body.sfx-off-weather[data-sfx-mood="hype"] .Root__top-container { filter: none !important; }
+body.sfx-off-weather[data-sfx-mood="hype"] .starrynight-bg-container { filter: none !important; }
 body.sfx-off-drift .starrynight-bg-container, body.sfx-off-drift .sfx-gold-layer, body.sfx-off-drift .sfx-weather { translate: none !important; }
 body.sfx-off-glow .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { box-shadow: 0 0 14px 1px rgba(var(--spice-rgb-button), .35) !important; }
 body.sfx-off-swap .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art,
@@ -997,3 +999,24 @@ ul[role="menu"] [role="menuitem"], ul[role="menu"] [role="menuitem"] * { font-fa
 ul[role="menu"] [role="menuitem"]:hover { background: rgba(var(--spice-rgb-text), .08) !important; }
 ul[role="menu"] hr, ul[role="menu"] [role="separator"] { border-color: rgba(255,255,255,.08) !important; opacity: .6; }
 .sfx-like-item svg { color: #ffd98a !important; fill: #ffd98a !important; filter: drop-shadow(0 0 4px rgba(255,200,100,.6)); }
+
+/* ---------- Dock: room for the search field ---------- */
+.Root__globalNav { width: max-content !important; max-width: calc(100vw - 40px); gap: 6px; }
+.Root__globalNav > div { flex: 0 0 auto !important; min-width: max-content; }
+.Root__globalNav .main-globalNav-searchSection { flex: 0 0 auto !important; }
+/* idle: just the magnifier; searching: a real field */
+.Root__globalNav .main-globalNav-searchInputSection {
+  width: 48px !important; min-width: 48px !important; overflow: hidden; transition: width .35s cubic-bezier(.3,.8,.2,1);
+}
+body.sfx-on-search .Root__globalNav .main-globalNav-searchInputSection,
+.Root__globalNav .main-globalNav-searchSection:focus-within .main-globalNav-searchInputSection { width: 280px !important; }
+.Root__globalNav .main-globalNav-searchInputSection input { width: 100% !important; }
+.Root__globalNav { display: flex !important; justify-content: center !important; align-items: center !important; }
+.Root__globalNav .main-globalNav-historyButtonsContainer,
+.Root__globalNav .main-globalNav-searchSection,
+.Root__globalNav .main-globalNav-searchContainer,
+.Root__globalNav .main-globalNav-contentRight { width: auto !important; min-width: 0 !important; max-width: none !important; flex: 0 0 auto !important; margin: 0 !important; }
+.Root__globalNav .main-globalNav-contentRight { min-width: max-content !important; display: flex !important; }
+.Root__globalNav .main-globalNav-historyButtonsContainer { padding: 0 !important; }
+/* Spotify collapses the profile button while search is open; the dock has room, keep it */
+.Root__globalNav .main-globalNav-contentRight > .main-globalNav-navLink { display: flex !important; }

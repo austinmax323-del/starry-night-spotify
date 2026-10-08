@@ -520,12 +520,19 @@ sfxEvery(() => {
 
 // ---------- Dock slides away while scrolling ----------
 (function dockOnScroll() {
+  // React to the user scrolling the main view only (wheel / trackpad / keys). Programmatic scrolls,
+  // like the shelf carousel advancing every 5s, used to fire "scroll" and hide the dock at random.
   let t = null;
-  document.addEventListener("scroll", () => {
+  const hide = e => {
+    if (!e.target.closest?.(".Root__main-view")) return;
+    if (document.querySelector(".Root__globalNav:focus-within")) return; // typing in search: keep it
     document.body.classList.add("sfx-scrolling");
     clearTimeout(t);
     t = setTimeout(() => document.body.classList.remove("sfx-scrolling"), 500);
-  }, true);
+  };
+  document.addEventListener("wheel", hide, { passive: true, capture: true });
+  document.addEventListener("touchmove", hide, { passive: true, capture: true });
+  document.addEventListener("keydown", e => { if (/^(PageUp|PageDown|ArrowUp|ArrowDown|Home|End| )$/.test(e.key) && !e.target.closest("input, textarea")) hide(e); }, true);
 })();
 
 // Page flags for page-specific styling (search results, album pages)
