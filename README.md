@@ -37,7 +37,6 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Warp-speed streaks on skip and page change; click empty sky for a shooting star; meteor showers when a song gets loud.
 - Gold shooting star when you like a song — it stays in the sky as a permanent star.
 - "Weather" from the track's tempo, loudness and key: fog, aurora, or a sky that pulses on the beat.
-- Slow camera drift so the sky never looks frozen.
 
 **Startup intro (WebGL, no libraries)** — hyperspace jump, 26k stars collapse into a tilted spinning record whose label is painted from the current cover, title card, then the record flies into the player. Press <kbd>I</kbd> to replay, click to skip.
 

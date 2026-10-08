@@ -17,17 +17,32 @@
 (function sfxScheduler() {
   const tasks = [];
   window.sfxEvery = (fn, ms) => tasks.push({ fn, ms, next: 0 });
-  (function loop(now) {
-    if (!document.hidden) for (const t of tasks) if (now >= t.next) { t.next = now + t.ms; try { t.fn(); } catch {} }
-    requestAnimationFrame(loop);
-  })(0);
+  setInterval(() => {
+    if (document.hidden) return;
+    const now = performance.now();
+    for (const t of tasks) if (now >= t.next) { t.next = now + t.ms; try { t.fn(); } catch {} }
+  }, 100);
 })();
 
 // Starry FX: beat-reactive glow on the vinyl player (--beat 0..1 on :root).
 (function starryFx() {
   if (!Spicetify?.Player?.data || !Spicetify.getAudioData) return setTimeout(starryFx, 300);
   let beats = null, uri = null, idx = 0;
-  const root = document.documentElement.style;
+  // --beat goes on the few elements that read it. Setting it on :root restyled the whole page every frame.
+  let last3 = "";
+  const setBeat = v => {
+    if (v === last3) return; last3 = v;
+    const art = document.querySelector(".Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art");
+    if (art && !art.querySelector(":scope > .sfx-glow")) { const g = document.createElement("div"); g.className = "sfx-glow"; art.prepend(g); }
+    // .starrynight-bg-container holds ~400 stars and --beat inherits into all of them, so only feed it when the
+    // hype weather actually uses it; the glow layer has no children and is cheap to update
+    document.querySelector(".sfx-glow")?.style.setProperty("--beat", v);
+    const sky = document.querySelector(".starrynight-bg-container");
+    if (sky) {
+      if (document.body.dataset.sfxMood === "hype" && window.sfxOn?.("weather") !== false) sky.style.setProperty("--beat", v);
+      else if (sky.style.getPropertyValue("--beat")) sky.style.removeProperty("--beat");
+    }
+  };
 
   async function load() {
     const u = Spicetify.Player.data?.item?.uri;
@@ -53,8 +68,10 @@
       }
     }
     level = Math.max(0, level - dt / 260);
-    root.setProperty("--beat", level.toFixed(3));
-    requestAnimationFrame(frame);
+    setBeat(level < 0.01 ? "0" : level.toFixed(2));
+    // ~30 fps while playing; 4 checks a second while paused or hidden
+    if (Spicetify.Player.isPlaying() && !document.hidden) setTimeout(() => requestAnimationFrame(frame), 28);
+    else setTimeout(() => frame(performance.now()), 250);
   }
   requestAnimationFrame(frame);
 })();
@@ -213,13 +230,14 @@ document.addEventListener("click", e => {
         svg.querySelector(".sfx-ring-fill").setAttribute("stroke-dashoffset", String(C * (1 - f)));
       }
     } catch {} // player not ready yet; keep the loop alive
-    requestAnimationFrame(tick);
+    setTimeout(tick, 250);
   })();
 
   // Shelves: one big featured card that rotates through the row
   function tagShelves() {
-    for (const sec of document.querySelectorAll('section[data-testid="component-shelf"]')) {
+    for (const sec of document.querySelectorAll('section[data-testid="component-shelf"]:not([data-sfx-shelf])')) {
       const card = sec.querySelector('[data-encore-id="card"]');
+      if (card) sec.dataset.sfxShelf = "1"; // computed-style walk below runs once per shelf, not every second
       if (!card) continue;
       let g = card.parentElement;
       while (g && g !== sec && getComputedStyle(g).display !== "grid") g = g.parentElement;
@@ -439,15 +457,7 @@ document.addEventListener("click", e => {
   }, 700);
 })();
 
-// Slow camera drift: a gentle Lissajous path, ~2.5 min per loop
-(function drift() {
-  const root = document.documentElement.style, t0 = performance.now();
-  sfxEvery(() => {
-    const t = (performance.now() - t0) / 1000;
-    root.setProperty("--sfx-dx", `${(Math.sin(t * 2 * Math.PI / 150) * 2.0).toFixed(3)}vw`);
-    root.setProperty("--sfx-dy", `${(Math.sin(t * 2 * Math.PI / 110 + 1) * 1.4).toFixed(3)}vh`);
-  }, 100);
-})();
+// Slow camera drift: now a pure CSS animation (see user.css)
 
 // The player loads a 64px cover; swap in the 640px version so the record label stays sharp
 sfxEvery(() => {
@@ -592,9 +602,10 @@ window.sfxEvery(() => {
 
 // ---------- Queue: Spotify opens it in the right panel the theme hides; show that panel as a floating glass card ----------
 window.sfxEvery(() => {
-  const rs = document.querySelector(".Root__right-sidebar");
-  const open = !!rs && /^\s*Queue/.test(rs.innerText || "") && !rs.querySelector('[data-testid="NPV_Panel_OpenDiv"]');
-  document.body.classList.toggle("sfx-queue-open", open);
+  // read the Queue button's pressed state; reading the panel's innerText forced a full-page style + layout 4x a second
+  const qb = document.querySelector('.Root__now-playing-bar button[aria-label="Queue"]');
+  const open = qb?.getAttribute("aria-pressed") === "true";
+  if (document.body.classList.contains("sfx-queue-open") !== open) document.body.classList.toggle("sfx-queue-open", open);
 }, 250);
 
 // ---------- Constellations of your most-liked artists ----------

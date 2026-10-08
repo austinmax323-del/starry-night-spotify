@@ -482,7 +482,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /* Vinyl mode: cover becomes the spinning centre label of a record, tonearm drops on play */
 .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art {
   position: relative; overflow: visible !important; border-radius: 50%;
-  box-shadow: 0 0 calc(12px + 38px * var(--beat, 0)) calc(1px + 7px * var(--beat, 0)) rgba(var(--spice-rgb-button), calc(.35 + .5 * var(--beat, 0))) !important;
+  box-shadow: 0 0 12px 1px rgba(var(--spice-rgb-button), .35) !important;
 }
 .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art img { box-shadow: none !important; }
 .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art::after {
@@ -769,14 +769,15 @@ body.sfx-intro-on #main { opacity: 0; }
 /* ---------- Song weather ---------- */
 .sfx-weather > div { position: absolute; opacity: 0; transition: opacity 2.5s ease; }
 .sfx-weather .fog {
-  width: 90vw; height: 70vh; border-radius: 50%; filter: blur(60px);
-  background: radial-gradient(closest-side, rgba(var(--spice-rgb-text), .10), transparent);
+  width: 90vw; height: 70vh; border-radius: 50%; will-change: transform;
+  background: radial-gradient(closest-side, rgba(var(--spice-rgb-text), .09), rgba(var(--spice-rgb-text), .03) 55%, transparent);
 }
 .sfx-weather .f1 { left: -20vw; top: 30vh; animation: sfx-fog 38s ease-in-out infinite alternate; }
 .sfx-weather .f2 { right: -25vw; top: -5vh; animation: sfx-fog 46s ease-in-out infinite alternate-reverse; }
 @keyframes sfx-fog { to { transform: translate(18vw, -8vh) scale(1.2); } }
 .sfx-weather .aur {
-  left: -10vw; width: 120vw; height: 26vh; top: 2vh; filter: blur(40px); mix-blend-mode: screen; border-radius: 50%;
+  left: -10vw; width: 120vw; height: 26vh; top: 2vh; border-radius: 50%; will-change: transform;
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent);
   background: linear-gradient(90deg, transparent, rgba(80, 255, 190, .22), rgba(var(--spice-rgb-button), .18), rgba(140, 120, 255, .2), transparent);
   animation: sfx-aurora 18s ease-in-out infinite alternate;
 }
@@ -789,7 +790,7 @@ body.sfx-intro-on #main { opacity: 0; }
 /* hype: the whole sky breathes with the beat */
 /* pulse the star layer only: a filter on .Root__top-container would become the containing block
    for the fixed dock and throw it off-screen */
-body[data-sfx-mood="hype"] .starrynight-bg-container { filter: brightness(calc(1 + .6 * var(--beat, 0))); }
+body[data-sfx-mood="hype"] .starrynight-bg-container { opacity: calc(.75 + .25 * var(--beat, 0)); }
 
 /* ---------- Page transitions ---------- */
 .Root__main-view.sfx-page-in { animation: sfx-page-in 520ms cubic-bezier(.2,.8,.2,1); }
@@ -798,8 +799,9 @@ body[data-sfx-mood="hype"] .starrynight-bg-container { filter: brightness(calc(1
 
 /* ---------- Slow camera drift: the sky pans a little over a few minutes ---------- */
 /* uses the separate `translate` property so the stars keep their own twinkle animations */
-.starrynight-bg-container,
-.sfx-gold-layer, .sfx-weather { translate: var(--sfx-dx, 0) var(--sfx-dy, 0); }
+/* Sky drift removed: animating the container that holds ~400 stars forced a full-page style recalc every
+   frame (~330ms of main-thread work per second, the bulk of Spotify's energy use). */
+@keyframes sfx-drift { 0% { transform: translate(0, 0); } 33% { transform: translate(-2vw, 1.4vh); } 66% { transform: translate(1.6vw, -1vh); } 100% { transform: translate(2vw, 1.4vh); } }
 
 /* ---------- Dust + scratches on the record ---------- */
 .sfx-dust {
@@ -818,8 +820,8 @@ body[data-sfx-mood="hype"] .starrynight-bg-container { filter: brightness(calc(1
 /* ---------- Effect switches (palette menu) ---------- */
 body.sfx-off-gold .sfx-gold-layer, body.sfx-off-weather .sfx-weather,
 body.sfx-off-dust .sfx-dust, body.sfx-off-planet .sfx-planet { display: none !important; }
-body.sfx-off-weather[data-sfx-mood="hype"] .starrynight-bg-container { filter: none !important; }
-body.sfx-off-drift .starrynight-bg-container, body.sfx-off-drift .sfx-gold-layer, body.sfx-off-drift .sfx-weather { translate: none !important; }
+body.sfx-off-weather[data-sfx-mood="hype"] .starrynight-bg-container { opacity: 1 !important; }
+body.sfx-off-drift .starrynight-bg-container, body.sfx-off-drift .sfx-gold-layer, body.sfx-off-drift .sfx-weather, body.sfx-off-drift .sfx-const { animation: none !important; translate: none !important; }
 body.sfx-off-glow .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { box-shadow: 0 0 14px 1px rgba(var(--spice-rgb-button), .35) !important; }
 body.sfx-off-swap .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art,
 body.sfx-off-swap .main-nowPlayingWidget-coverArt .cover-art::before { animation: none !important; }
@@ -1088,7 +1090,7 @@ body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", s
 .main-view-container input[type="checkbox"] + span, .main-view-container [role="switch"] { accent-color: rgb(var(--spice-rgb-button)); }
 
 /* ---------- Constellations ---------- */
-.sfx-const { position: absolute; inset: 0; z-index: -1; pointer-events: none; translate: var(--sfx-dx, 0) var(--sfx-dy, 0); }
+.sfx-const { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .sfx-con { position: absolute; margin: 0; width: 170px; opacity: .32; transition: opacity 1.2s, filter 1.2s; }
 .sfx-con svg { width: 170px; height: 110px; overflow: visible; }
 .sfx-con line { stroke: rgba(var(--spice-rgb-text), .35); stroke-width: .6; }
@@ -1104,3 +1106,18 @@ body.sfx-queue-open .Root__right-sidebar > * { width: 100% !important; height: 1
 body.sfx-queue-open .Root__right-sidebar .Root__right-sidebar { display: block !important; position: static !important; width: 100% !important; height: 100% !important; border: 0; box-shadow: none; backdrop-filter: none; background: none !important; }
 /* the column width follows Spotify's right-panel variable, which changes when the queue opens: pin it */
 @media (min-width: 1281px) { .Root__now-playing-bar { width: 420px !important; } }
+
+/* beat glow layer: the shadow is painted once; only its opacity changes */
+.sfx-glow {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: -1; will-change: opacity;
+  box-shadow: 0 0 50px 8px rgba(var(--spice-rgb-button), .85);
+  opacity: var(--beat, 0);
+}
+body.sfx-off-glow .sfx-glow { display: none; }
+
+/* ---------- Performance: star twinkle on opacity (GPU) instead of box-shadow (main thread every frame) ---------- */
+.starrynight-bg-container > div { box-shadow: 0 0 6px 1px var(--spice-star-glow); will-change: opacity; }
+@keyframes twinkle1 { 0%, 100% { opacity: 1; } 20% { opacity: .35; } 60% { opacity: .9; } }
+@keyframes twinkle2 { 0%, 100% { opacity: .9; } 40% { opacity: .3; } 70% { opacity: 1; } }
+@keyframes twinkle3 { 0%, 100% { opacity: .4; } 30% { opacity: 1; } 80% { opacity: .6; } }
+@keyframes twinkle4 { 0%, 100% { opacity: .8; } 50% { opacity: .25; } }
