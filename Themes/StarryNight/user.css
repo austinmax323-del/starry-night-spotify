@@ -1020,3 +1020,42 @@ body.sfx-on-search .Root__globalNav .main-globalNav-searchInputSection,
 .Root__globalNav .main-globalNav-historyButtonsContainer { padding: 0 !important; }
 /* Spotify collapses the profile button while search is open; the dock has room, keep it */
 .Root__globalNav .main-globalNav-contentRight > .main-globalNav-navLink { display: flex !important; }
+
+/* ---------- 9. Narrow windows: the record column shrinks so the page keeps its room ---------- */
+@media (max-width: 1280px) {
+  .Root__now-playing-bar { width: 330px !important; --panel-width: 330px; }
+  .Root__now-playing-bar .main-nowPlayingBar-container { margin-left: auto !important; margin-right: auto !important; }
+  .Root__now-playing-bar .main-nowPlayingBar-container { min-width: 0 !important; width: 300px !important; max-width: 300px !important; }
+  .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { width: 220px !important; height: 220px !important; }
+  .sfx-next { max-width: 260px; }
+  .sfx-planet { right: 250px; width: 60px; height: 60px; }
+}
+@media (max-width: 1050px) {
+  .Root__now-playing-bar { width: 275px !important; --panel-width: 275px; }
+  .Root__now-playing-bar .main-nowPlayingBar-container { width: 250px !important; max-width: 250px !important; }
+  .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { width: 180px !important; height: 180px !important; }
+  .sfx-next { display: none; }
+  .sfx-planet { display: none; }
+}
+
+/* ---------- 1. DJ / Jam button: scheme colour instead of Spotify blue ---------- */
+.Root__now-playing-bar button:has(.dj-button) {
+  background: rgba(var(--spice-rgb-button), .14) !important; color: rgb(var(--spice-rgb-button)) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-button), .35), 0 0 14px rgba(var(--spice-rgb-button), .25);
+}
+.Root__now-playing-bar button:has(.dj-button) svg { fill: currentColor !important; color: currentColor !important; }
+
+/* ---------- 2. Playlist / album headers: blurred cover glow behind the title ---------- */
+.main-entityHeader-container.sfx-cover-glow { position: relative; isolation: isolate; }
+.main-entityHeader-container.sfx-cover-glow::before {
+  content: ""; position: absolute; z-index: -1; left: 4%; top: -10%; width: 60%; height: 120%;
+  background: var(--sfx-cover) center / cover; filter: blur(70px) saturate(1.4); opacity: .35; border-radius: 50%; pointer-events: none;
+}
+
+/* ---------- 6. Gold sparks off the like button ---------- */
+.sfx-spark {
+  position: fixed; z-index: 9999; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; pointer-events: none;
+  background: #ffe6a8; box-shadow: 0 0 6px 2px rgba(255, 200, 100, .9);
+  animation: sfx-spark 700ms cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes sfx-spark { 0% { transform: translate(0,0) scale(1.4); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(.2); opacity: 0; } }

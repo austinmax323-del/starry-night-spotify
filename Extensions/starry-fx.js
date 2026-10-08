@@ -302,8 +302,26 @@ document.addEventListener("click", e => {
     d.title = st.t || "";
     l.appendChild(d);
   }
+  function sparks() {
+    // the visible check/like button next to the title (the first button in that block is a hidden 0-width one)
+    const b = [...document.querySelectorAll(".Root__now-playing-bar .main-nowPlayingWidget-nowPlaying button")].find(x => x.getBoundingClientRect().width > 0);
+    const r = b?.getBoundingClientRect();
+    if (!r || !r.width) return;
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let k = 0; k < 14; k++) {
+      const s = document.createElement("div");
+      s.className = "sfx-spark";
+      const a = Math.random() * Math.PI * 2, d = 18 + Math.random() * 34;
+      s.style.left = cx + "px"; s.style.top = cy + "px";
+      s.style.setProperty("--x", Math.cos(a) * d + "px"); s.style.setProperty("--y", Math.sin(a) * d + "px");
+      s.style.animationDelay = Math.random() * 80 + "ms";
+      document.body.appendChild(s);
+      s.addEventListener("animationend", () => s.remove());
+    }
+  }
   function celebrate() {
     if (window.sfxOn?.("gold") === false) return;
+    sparks();
     const l = layer(); if (!l) return;
     const st = { x: 8 + Math.random() * 84, y: 6 + Math.random() * 60, s: 3 + Math.random() * 2, t: Spicetify.Player.data?.item?.name };
     const ex = st.x / 100 * innerWidth, ey = st.y / 100 * innerHeight;
@@ -562,3 +580,12 @@ window.sfxEvery(() => {
     if (/liked songs|^\s*like\s*$/i.test(it.textContent)) it.classList.add("sfx-like-item");
   }
 }, 150);
+
+// Playlist / album headers: a blurred glow of the cover behind the title
+window.sfxEvery(() => {
+  const h = document.querySelector(".main-view-container .main-entityHeader-container");
+  const img = h?.querySelector("img.main-entityHeader-image, .main-entityHeader-image img, img");
+  if (!h || !img?.src) return;
+  const url = `url("${img.src}")`;
+  if (h.style.getPropertyValue("--sfx-cover") !== url) { h.style.setProperty("--sfx-cover", url); h.classList.add("sfx-cover-glow"); }
+}, 600);
