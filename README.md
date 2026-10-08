@@ -46,6 +46,9 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Type: Big Caslon (titles), Futura (section headings), Avenir Next (everything else) — all ship with macOS.
 - Home shelves become numbered chapters with one rotating featured card; track lists lose the table look; artist pages hide clutter behind a "More" pill.
 - Cinema mode (<kbd>C</kbd>): just the sky, a giant record and the title.
+- Story card (<kbd>S</kbd>): saves a 1080×1920 "now playing" image to Downloads and copies it.
+- Your five most-liked artists hang in the sky as constellations; the one playing lights up.
+- Queue opens as a floating glass panel; settings get glass sections.
 - Every effect can be switched off from the palette menu.
 
 ## Files

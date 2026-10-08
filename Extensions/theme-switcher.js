@@ -76,7 +76,7 @@
     wrap.appendChild(grid);
     const FX = [["intro", "Startup intro"], ["warp", "Warp on skip & page change"], ["meteors", "Shooting stars & meteor showers"],
       ["gold", "Gold star when you like a song"], ["weather", "Song weather"], ["glow", "Beat glow"], ["swap", "Record swap"],
-      ["dust", "Dust & scratches"], ["drift", "Sky drift"], ["planet", "Planet"]];
+      ["dust", "Dust & scratches"], ["drift", "Sky drift"], ["planet", "Planet"], ["const", "Artist constellations"]];
     const head = document.createElement("div");
     head.textContent = "Effects";
     head.style.cssText = "margin:26px 0 10px;font-family:Futura,sans-serif;font-size:12px;letter-spacing:.25em;text-transform:uppercase;opacity:.7";

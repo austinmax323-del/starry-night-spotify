@@ -589,3 +589,117 @@ window.sfxEvery(() => {
   const url = `url("${img.src}")`;
   if (h.style.getPropertyValue("--sfx-cover") !== url) { h.style.setProperty("--sfx-cover", url); h.classList.add("sfx-cover-glow"); }
 }, 600);
+
+// ---------- Queue: Spotify opens it in the right panel the theme hides; show that panel as a floating glass card ----------
+window.sfxEvery(() => {
+  const rs = document.querySelector(".Root__right-sidebar");
+  const open = !!rs && /^\s*Queue/.test(rs.innerText || "") && !rs.querySelector('[data-testid="NPV_Panel_OpenDiv"]');
+  document.body.classList.toggle("sfx-queue-open", open);
+}, 250);
+
+// ---------- Constellations of your most-liked artists ----------
+(function constellations() {
+  if (!Spicetify?.Platform?.LibraryAPI) return setTimeout(constellations, 500);
+  const KEY = "sfx-top-artists";
+  const rnd = seed => () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  async function topArtists() {
+    try {
+      const c = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (c && Date.now() - c.at < 86400000) return c.names;
+    } catch {}
+    const r = await Spicetify.Platform.LibraryAPI.getTracks({ limit: 2000, offset: 0 });
+    const count = {};
+    for (const t of r.items || r) for (const a of t.artists || []) count[a.name] = (count[a.name] || 0) + 1;
+    const names = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => x[0]);
+    try { localStorage.setItem(KEY, JSON.stringify({ at: Date.now(), names })); } catch {}
+    return names;
+  }
+  // five slots spread over the sky, kept clear of the player column on the right
+  const SLOTS = [[8, 10], [36, 6], [60, 14], [18, 58], [50, 66]];
+  async function draw() {
+    const host = document.querySelector(".Root__top-container");
+    if (!host || host.querySelector(":scope > .sfx-const")) return;
+    let names = [];
+    try { names = await topArtists(); } catch { return; }
+    if (!names.length) return;
+    const layer = document.createElement("div");
+    layer.className = "sfx-const";
+    layer.innerHTML = names.map((name, i) => {
+      const r = rnd([...name].reduce((a, ch) => a + ch.charCodeAt(0), 7) * 31 + i);
+      const n = 5 + Math.floor(r() * 3);
+      const pts = Array.from({ length: n }, () => [r() * 150 + 10, r() * 90 + 10]);
+      pts.sort((a, b) => a[0] - b[0]);
+      const lines = pts.slice(1).map((p, k) => `<line x1="${pts[k][0]}" y1="${pts[k][1]}" x2="${p[0]}" y2="${p[1]}"/>`).join("");
+      const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="${1.4 + r() * 1.4}"/>`).join("");
+      const esc = String(name).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const [x, y] = SLOTS[i];
+      return `<figure class="sfx-con" data-artist="${esc}" style="left:${x}%;top:${y}%"><svg viewBox="0 0 170 110">${lines}${dots}</svg><figcaption>${esc}</figcaption></figure>`;
+    }).join("");
+    host.prepend(layer);
+  }
+  window.sfxEvery(() => {
+    draw();
+    // the constellation of whoever is playing lights up
+    const now = (Spicetify.Player.data?.item?.artists || []).map(a => a.name);
+    for (const f of document.querySelectorAll(".sfx-con")) f.classList.toggle("lit", now.includes(f.dataset.artist));
+  }, 1500);
+})();
+
+// ---------- "Now playing" story card: press S to save a 1080x1920 image ----------
+(function storyCard() {
+  async function load(src) { const i = new Image(); i.crossOrigin = "anonymous"; i.src = src; await i.decode(); return i; }
+  async function make() {
+    const it = Spicetify.Player.data?.item;
+    if (!it) return;
+    const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H;
+    const x = c.getContext("2d");
+    const cs = getComputedStyle(document.documentElement);
+    const top = cs.getPropertyValue("--spice-sidebar-alt").trim() || "#000", bot = cs.getPropertyValue("--spice-sidebar").trim() || "#1c1c1c";
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(1, bot);
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    for (let i = 0; i < 520; i++) {                       // starfield
+      const s = Math.random() < .92 ? 1 + Math.random() * 1.2 : 2 + Math.random() * 2;
+      x.fillStyle = `rgba(255,255,255,${.3 + Math.random() * .7})`;
+      x.beginPath(); x.arc(Math.random() * W, Math.random() * H, s, 0, 7); x.fill();
+    }
+    const cx = W / 2, cy = 820, R = 420;
+    x.save(); x.shadowColor = "rgba(255,255,255,.35)"; x.shadowBlur = 60;
+    x.fillStyle = "#0c0c0c"; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill(); x.restore();
+    for (let r = R * .26; r < R; r += 3) {                 // grooves
+      x.strokeStyle = `rgba(255,255,255,${r % 21 < 3 ? .07 : .028})`; x.lineWidth = 1;
+      x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke();
+    }
+    const sheen = x.createConicGradient(0.7, cx, cy);
+    sheen.addColorStop(0, "rgba(255,255,255,0)"); sheen.addColorStop(.06, "rgba(255,255,255,.10)"); sheen.addColorStop(.12, "rgba(255,255,255,0)");
+    sheen.addColorStop(.5, "rgba(255,255,255,0)"); sheen.addColorStop(.56, "rgba(255,255,255,.10)"); sheen.addColorStop(.62, "rgba(255,255,255,0)");
+    x.fillStyle = sheen; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill();
+    try {                                                   // label = cover
+      const src = (it.images?.[0]?.url || it.metadata?.image_url || "").replace("spotify:image:", "https://i.scdn.co/image/").replace(/ab67616d0000(4851|1e02)/, "ab67616d0000b273");
+      const img = await load(src);
+      x.save(); x.beginPath(); x.arc(cx, cy, R * .3, 0, 7); x.clip(); x.drawImage(img, cx - R * .3, cy - R * .3, R * .6, R * .6); x.restore();
+    } catch {}
+    x.fillStyle = "#0c0c0c"; x.beginPath(); x.arc(cx, cy, 9, 0, 7); x.fill();
+    x.textAlign = "center"; x.fillStyle = "#fff";
+    x.font = "500 78px 'Big Caslon', serif";
+    const title = it.name || it.metadata?.title || "";
+    let t = title; while (x.measureText(t).width > W - 140 && t.length > 4) t = t.slice(0, -2);
+    x.fillText(t === title ? t : t + "…", cx, 1420);
+    x.fillStyle = "rgba(255,255,255,.7)"; x.font = "500 30px Futura, sans-serif";
+    x.letterSpacing = "10px";
+    x.fillText((it.artists || []).map(a => a.name).join(", ").toUpperCase() || (it.metadata?.artist_name || "").toUpperCase(), cx, 1490);
+    x.font = "400 22px Futura, sans-serif"; x.fillStyle = "rgba(255,255,255,.45)";
+    x.fillText("NOW PLAYING", cx, 260);
+    const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    try { await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); } catch {}
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `now-playing-${title.replace(/[^\w-]+/g, "-").slice(0, 40)}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    Spicetify.showNotification?.("Story card saved to Downloads (and copied)");
+  }
+  window.sfxStoryCard = make;
+  document.addEventListener("keydown", e => {
+    if (e.target.closest?.("input, textarea, [contenteditable='true']")) return;
+    if ((e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey && !e.altKey) make();
+  });
+})();

@@ -1059,3 +1059,48 @@ body.sfx-on-search .Root__globalNav .main-globalNav-searchInputSection,
   animation: sfx-spark 700ms cubic-bezier(.2,.8,.3,1) forwards;
 }
 @keyframes sfx-spark { 0% { transform: translate(0,0) scale(1.4); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(.2); opacity: 0; } }
+
+/* ---------- Queue as a floating glass panel ---------- */
+body.sfx-queue-open .Root__right-sidebar {
+  display: block !important; position: fixed !important; z-index: 70; top: 20px; bottom: 96px; right: 450px; width: 360px !important;
+  min-height: 0 !important; height: auto !important; border-radius: 20px; overflow: hidden;
+  background: rgba(10, 10, 14, .78) !important; backdrop-filter: blur(26px) saturate(1.2); -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,.09); box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  opacity: 1 !important;
+}
+@media (max-width: 1280px) { body.sfx-queue-open .Root__right-sidebar { right: 350px; } }
+@keyframes sfx-queue-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+body.sfx-queue-open .Root__right-sidebar * { background-color: transparent !important; }
+body.sfx-queue-open .Root__right-sidebar img { border-radius: 50% !important; box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.12); }
+body.sfx-queue-open .Root__right-sidebar h1, body.sfx-queue-open .Root__right-sidebar h2,
+body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", sans-serif !important; letter-spacing: .14em; text-transform: uppercase; font-size: 12px !important; }
+
+/* ---------- Settings: glass sections, theme type ---------- */
+.x-settings-section {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 18px;
+  padding: 18px 22px !important; margin-bottom: 18px !important;
+}
+.x-settings-section > h2, .x-settings-section h2 {
+  font-family: "Futura", sans-serif !important; font-weight: 500 !important; font-size: 12px !important; letter-spacing: .26em; text-transform: uppercase; opacity: .8;
+}
+.x-settings-row { border-radius: 10px; padding: 6px 8px; transition: background .2s; }
+.x-settings-row:hover { background: rgba(255,255,255,.04); }
+.main-view-container input[type="checkbox"] + span, .main-view-container [role="switch"] { accent-color: rgb(var(--spice-rgb-button)); }
+
+/* ---------- Constellations ---------- */
+.sfx-const { position: absolute; inset: 0; z-index: -1; pointer-events: none; translate: var(--sfx-dx, 0) var(--sfx-dy, 0); }
+.sfx-con { position: absolute; margin: 0; width: 170px; opacity: .32; transition: opacity 1.2s, filter 1.2s; }
+.sfx-con svg { width: 170px; height: 110px; overflow: visible; }
+.sfx-con line { stroke: rgba(var(--spice-rgb-text), .35); stroke-width: .6; }
+.sfx-con circle { fill: rgb(var(--spice-rgb-star)); }
+.sfx-con figcaption { font-family: "Futura", sans-serif !important; font-size: 9px; letter-spacing: .32em; text-transform: uppercase; color: var(--spice-subtext); margin-top: 2px; }
+.sfx-con.lit { opacity: .9; filter: drop-shadow(0 0 6px rgba(var(--spice-rgb-star), .8)); }
+body.sfx-off-drift .sfx-const { translate: none; }
+body.sfx-off-const .sfx-const { display: none !important; }
+/* Spotify marks the collapsed panel's contents visibility:hidden; the floating queue needs them shown */
+body.sfx-queue-open .Root__right-sidebar, body.sfx-queue-open .Root__right-sidebar * { visibility: visible !important; }
+body.sfx-queue-open .Root__right-sidebar > * { width: 100% !important; height: 100% !important; }
+/* the panel nests a second element with the same class, which the "hide right panel" rule also hid */
+body.sfx-queue-open .Root__right-sidebar .Root__right-sidebar { display: block !important; position: static !important; width: 100% !important; height: 100% !important; border: 0; box-shadow: none; backdrop-filter: none; background: none !important; }
+/* the column width follows Spotify's right-panel variable, which changes when the queue opens: pin it */
+@media (min-width: 1281px) { .Root__now-playing-bar { width: 420px !important; } }
