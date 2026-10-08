@@ -1,3 +1,17 @@
+// Feature switches (set from the palette menu). Stored as a list of disabled keys.
+(function sfxFlags() {
+  let off = [];
+  try { off = JSON.parse(localStorage.getItem("sfx-off") || "[]"); } catch {}
+  const sync = () => { if (document.body) for (const k of off) document.body.classList.add("sfx-off-" + k); else setTimeout(sync, 20); };
+  sync();
+  window.sfxOn = k => !off.includes(k);
+  window.sfxSet = (k, on) => {
+    off = off.filter(x => x !== k); if (!on) off.push(k);
+    try { localStorage.setItem("sfx-off", JSON.stringify(off)); } catch {}
+    document.body.classList.toggle("sfx-off-" + k, !on);
+  };
+})();
+
 // Starry FX: beat-reactive glow on the vinyl player (--beat 0..1 on :root).
 (function starryFx() {
   if (!Spicetify?.Player?.data || !Spicetify.getAudioData) return setTimeout(starryFx, 300);
@@ -54,7 +68,7 @@ function shoot(x, y, delay = 0) {
 // Click on empty sky -> shooting star
 document.addEventListener("click", e => {
   if (e.target.closest("button, a, input, textarea, img, [role='row'], [role='button'], [draggable='true'], .cover-art, .main-trackList-row, .main-card-card")) return;
-  shoot(e.clientX, e.clientY);
+  if (window.sfxOn?.("meteors") !== false) shoot(e.clientX, e.clientY);
 }, true);
 
 // Meteor shower when a song gets loud (section loudness jumps)
@@ -78,7 +92,7 @@ document.addEventListener("click", e => {
       i++;
       if (prev && cur.l - prev.l >= 2.5 && Date.now() > cool) {
         cool = Date.now() + 6000;
-        for (let k = 0; k < 14; k++) shoot(Math.random() * innerWidth * 0.9 + innerWidth * 0.1, Math.random() * innerHeight * 0.5, k * 90 + Math.random() * 60);
+        if (window.sfxOn?.("meteors") !== false) for (let k = 0; k < 14; k++) shoot(Math.random() * innerWidth * 0.9 + innerWidth * 0.1, Math.random() * innerHeight * 0.5, k * 90 + Math.random() * 60);
       }
     }
   }, 150);
@@ -90,7 +104,7 @@ document.addEventListener("click", e => {
   const loadedAt = Date.now();
   Spicetify.Player.addEventListener("songchange", () => {
     if (Date.now() - loadedAt < 4000) return; // ignore the startup track load
-    warp();
+    if (window.sfxOn?.("warp") !== false) warp();
     document.body.classList.remove("sfx-swap"); void document.body.offsetWidth;
     document.body.classList.add("sfx-swap");
     setTimeout(() => document.body.classList.remove("sfx-swap"), 1300);
@@ -277,6 +291,7 @@ document.addEventListener("click", e => {
     l.appendChild(d);
   }
   function celebrate() {
+    if (window.sfxOn?.("gold") === false) return;
     const l = layer(); if (!l) return;
     const st = { x: 8 + Math.random() * 84, y: 6 + Math.random() * 60, s: 3 + Math.random() * 2, t: Spicetify.Player.data?.item?.name };
     const ex = st.x / 100 * innerWidth, ey = st.y / 100 * innerHeight;
@@ -339,7 +354,7 @@ document.addEventListener("click", e => {
     document.body.dataset.sfxMood = mood;
     clearInterval(hypeTimer);
     if (mood === "hype" && window.sfxShoot) hypeTimer = setInterval(() => {
-      if (Spicetify.Player.isPlaying()) window.sfxShoot(Math.random() * innerWidth, Math.random() * innerHeight * 0.5);
+      if (Spicetify.Player.isPlaying() && window.sfxOn?.("meteors") !== false) window.sfxShoot(Math.random() * innerWidth, Math.random() * innerHeight * 0.5);
     }, 1800);
   }
   Spicetify.Player.addEventListener("songchange", () => setTimeout(update, 200));
@@ -356,7 +371,7 @@ document.addEventListener("click", e => {
     const v = document.querySelector(".Root__main-view");
     if (!v) return;
     v.classList.remove("sfx-page-in"); void v.offsetWidth; v.classList.add("sfx-page-in");
-    window.sfxWarp?.(90, 480);
+    if (window.sfxOn?.("warp") !== false) window.sfxWarp?.(90, 480);
   });
 })();
 

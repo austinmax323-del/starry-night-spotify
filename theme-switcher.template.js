@@ -72,7 +72,27 @@
       b.onclick = () => { apply(name); Spicetify.PopupModal.hide(); Spicetify.showNotification?.(`Theme: ${name}`); };
       grid.appendChild(b);
     }
-    Spicetify.PopupModal.display({ title: "Starry Night schemes", content: grid, isLarge: true });
+    const wrap = document.createElement("div");
+    wrap.appendChild(grid);
+    const FX = [["intro", "Startup intro"], ["warp", "Warp on skip & page change"], ["meteors", "Shooting stars & meteor showers"],
+      ["gold", "Gold star when you like a song"], ["weather", "Song weather"], ["glow", "Beat glow"], ["swap", "Record swap"],
+      ["dust", "Dust & scratches"], ["drift", "Sky drift"], ["planet", "Planet"]];
+    const head = document.createElement("div");
+    head.textContent = "Effects";
+    head.style.cssText = "margin:26px 0 10px;font-family:Futura,sans-serif;font-size:12px;letter-spacing:.25em;text-transform:uppercase;opacity:.7";
+    wrap.appendChild(head);
+    const list = document.createElement("div");
+    list.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px";
+    for (const [k, label] of FX) {
+      const row = document.createElement("label");
+      row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05);cursor:pointer";
+      const on = window.sfxOn ? window.sfxOn(k) : true;
+      row.innerHTML = `<span>${label}</span><input type="checkbox" ${on ? "checked" : ""} style="width:18px;height:18px;accent-color:#fff;cursor:pointer">`;
+      row.querySelector("input").onchange = e => window.sfxSet?.(k, e.target.checked);
+      list.appendChild(row);
+    }
+    wrap.appendChild(list);
+    Spicetify.PopupModal.display({ title: "Starry Night schemes", content: wrap, isLarge: true });
   }
 
   new Spicetify.Topbar.Button("Themes",

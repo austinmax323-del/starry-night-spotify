@@ -9,7 +9,8 @@
   const LABEL = 0.21;         // label radius as a fraction of the disc (matches the CSS vinyl)
   let running = false;
 
-  document.body.classList.add("sfx-intro-on");
+  const introOff = (() => { try { return JSON.parse(localStorage.getItem("sfx-off") || "[]").includes("intro"); } catch { return false; } })();
+  if (!introOff) document.body.classList.add("sfx-intro-on");
 
   async function coverPixels() {
     for (let i = 0; i < 60 && !Spicetify.Player.data?.item; i++) await new Promise(r => setTimeout(r, 50));
@@ -188,5 +189,5 @@
     if (e.target.closest?.("input, textarea, [contenteditable='true']")) return;
     if ((e.key === "i" || e.key === "I") && !e.metaKey && !e.ctrlKey && !e.altKey) run();
   });
-  run();
+  if (!introOff) run();
 })();

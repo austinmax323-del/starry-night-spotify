@@ -812,3 +812,12 @@ body[data-sfx-mood="hype"] .Root__top-container { filter: brightness(calc(1 + .2
   animation: spin 25s linear infinite; animation-play-state: paused;
 }
 [data-testid="now-playing-bar"]:has([data-testid="control-button-playpause"][aria-label="Pause"]) .sfx-dust-spin { animation-play-state: running; }
+
+/* ---------- Effect switches (palette menu) ---------- */
+body.sfx-off-gold .sfx-gold-layer, body.sfx-off-weather .sfx-weather,
+body.sfx-off-dust .sfx-dust, body.sfx-off-planet .sfx-planet { display: none !important; }
+body.sfx-off-weather[data-sfx-mood="hype"] .Root__top-container { filter: none !important; }
+body.sfx-off-drift .starrynight-bg-container, body.sfx-off-drift .sfx-gold-layer, body.sfx-off-drift .sfx-weather { translate: none !important; }
+body.sfx-off-glow .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { box-shadow: 0 0 14px 1px rgba(var(--spice-rgb-button), .35) !important; }
+body.sfx-off-swap .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art,
+body.sfx-off-swap .main-nowPlayingWidget-coverArt .cover-art::before { animation: none !important; }
