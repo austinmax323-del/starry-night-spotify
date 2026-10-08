@@ -16,6 +16,13 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 | --- | --- | --- |
 | ![Warp](screenshots/intro-warp.jpg) | ![Converging](screenshots/intro-converge.jpg) | ![Record forms](screenshots/intro-record.jpg) |
 
+**Pages**
+
+| | |
+| --- | --- |
+| ![Search results](screenshots/search-results.jpg) | ![Browse](screenshots/search-browse.jpg) |
+| ![Album page](screenshots/album.jpg) | ![Right-click menu](screenshots/menu.jpg) |
+
 ## What's in it
 
 **Player**
