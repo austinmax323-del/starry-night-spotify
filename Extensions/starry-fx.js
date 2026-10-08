@@ -228,7 +228,8 @@ document.addEventListener("click", e => {
       items[i]?.classList.remove("sfx-feat");
       const next = items[(i + 1) % items.length];
       next.classList.add("sfx-feat");
-      g.scrollTo({ left: Math.max(0, next.offsetLeft - g.offsetLeft - 8), behavior: "smooth" });
+      // keep the featured card at the front (CSS order) so the row never keeps its tall height with the big card off-screen
+      g.scrollTo({ left: 0, behavior: "smooth" });
     }
   }, 5000);
 })();
@@ -441,4 +442,16 @@ setInterval(() => {
   label();
   b.onclick = () => { document.body.classList.toggle("sfx-artist-more"); label(); };
   page.appendChild(b);
+}, 800);
+
+// Home shelves as numbered chapters: "01 — Recommended Stations"
+setInterval(() => {
+  let n = 0;
+  for (const sec of document.querySelectorAll('section[data-testid="component-shelf"]')) {
+    const h = sec.querySelector("h2");
+    if (!h) continue;
+    n++;
+    const ch = String(n).padStart(2, "0");
+    if (h.dataset.ch !== ch) h.dataset.ch = ch;
+  }
 }, 800);

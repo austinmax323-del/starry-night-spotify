@@ -833,3 +833,36 @@ body:not(.sfx-artist-more) [data-testid="artist-page"] section:is(
   color: var(--spice-text); background: rgba(var(--spice-rgb-text), .06); border: 1px solid rgba(var(--spice-rgb-text), .16);
 }
 .sfx-more-pill:hover { background: rgba(var(--spice-rgb-text), .12); }
+
+/* ---------- Home page fixes ---------- */
+/* 1. featured card always first, so no tall empty band above a row */
+.sfx-shelf > .sfx-feat { order: -1; }
+
+/* 2. dock: darker, heavier glass so covers scrolling behind it don't tint it */
+.Root__globalNav {
+  background: rgba(8, 8, 11, .82) !important;
+  backdrop-filter: blur(34px) saturate(1.1) brightness(.7) !important; -webkit-backdrop-filter: blur(34px) saturate(1.1) brightness(.7) !important;
+}
+
+/* 3. Spotify Radio covers: push the baked-in Spotify logo + "RADIO" strip out of frame, keep the artist name */
+/* trim only the top strip (logo + "RADIO"); scaling would crop the artist name at the edges */
+img[src*="/img/radio/"] { clip-path: inset(15% 0 0 0 round 6px); }
+
+/* 6. shelf headings as chapters, with a hairline running out to "Show all" */
+section[data-testid="component-shelf"] h2[data-ch]::before {
+  content: attr(data-ch) "  —  "; font-family: "Futura", sans-serif !important; font-weight: 400;
+  font-size: .5em; letter-spacing: .2em; vertical-align: middle; opacity: .45;
+}
+section[data-testid="component-shelf"] .e-10860-legacy-list-row__header { align-items: center; }
+section[data-testid="component-shelf"] .e-10860-legacy-list-row__header > :first-child { order: 1; }
+section[data-testid="component-shelf"] .e-10860-legacy-list-row__header::after {
+  content: ""; order: 2; flex: 1; height: 1px; margin: 0 22px; align-self: center; translate: 0 10px;
+  background: linear-gradient(90deg, rgba(var(--spice-rgb-text), .18), rgba(var(--spice-rgb-text), .04));
+}
+section[data-testid="component-shelf"] .e-10860-legacy-list-row__header > .e-10860-legacy-list-row__slot { order: 3; }
+
+/* 10. more air between rows, one line of grey text under each card */
+section[data-testid="component-shelf"] { margin-bottom: 44px !important; }
+[data-encore-id="card"] .e-10860-line-clamp { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+.main-cardImage-imageWrapper:has(img[src*="/img/radio/"]) { background: transparent !important; box-shadow: none !important; }
+[data-encore-id="card"] .encore-text-body-small { -webkit-line-clamp: 1 !important; line-clamp: 1 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
