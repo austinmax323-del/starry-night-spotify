@@ -1,0 +1,814 @@
+.button-module__button___hf2qg_marketplace {
+  color: var(--spice-subtext);
+}
+
+.os-scrollbar {
+  --os-handle-border-radius: 16px !important;
+  --os-size: 8px !important;
+}
+
+.main-entityHeader-backgroundColor {
+  background-color: #00000000 !important;
+}
+
+.main-home-homeHeader {
+  background-color: #00000000 !important;
+  background-image: none !important;
+}
+
+.Root__top-container {
+  background: linear-gradient(180deg, var(--spice-sidebar-alt) 0%, var(--spice-sidebar) 100%);
+  overflow: hidden;
+  grid-template-areas:
+    "left-sidebar    main-view         now-playing-bar"
+    "left-sidebar    main-view         right-sidebar";
+  grid-template-rows: auto auto 1fr;
+}
+
+.global-nav .Root__top-container {
+  grid-template-areas:
+    "top-banner global-nav global-nav"
+    "left-sidebar main-view now-playing-bar"
+    "left-sidebar main-view right-sidebar" !important;
+}
+
+.Root__globalNav {
+  background-color: #00000000 !important;
+}
+
+.ffFwfKcPDbmAPLXzxzKq:before {
+  background-color: #00000000 !important;
+}
+
+.I0bVSxvqA3rm5HvciMap {
+  --bgColor: #00000000 !important;
+}
+
+.I0bVSxvqA3rm5HvciMap::after {
+  --bgColor: #00000000 !important;
+}
+
+.PeLrpasyfBW8ql_bmoAi {
+  background-color: #00000000 !important;
+  background-image: none !important;
+}
+
+.PkOz5g82CaoKk1J3GX0e  {
+  background-color: #00000000 !important;
+  background-image: none !important;
+}
+
+.sv5suqIPUwjgUF_BzM41 {
+  transform: none !important;
+}
+
+.Root__right-sidebar {
+  width: min-content;
+  height: auto !important;
+  min-height: 100% !important;
+}
+
+.Root__now-playing-bar {
+  width: var(--panel-width);
+}
+
+.main-topBar-background {
+  background-color: var(--spice-highlight) !important;
+}
+
+.Root__nav-bar {
+  background-color: #00000000 !important;
+}
+
+.main-yourLibraryX-libraryContainer {
+  background: none !important;
+}
+
+.main-trackList-trackListRow:hover {
+  background-color: var(--spice-highlight);
+}
+
+.main-playPauseButton-button {
+  background-color: var(--spice-button);
+}
+
+.rX_OmqCngvY5ZCoYBZgb {
+  background-color: #00000000 !important;
+}
+
+.main-yourLibraryX-entryPoints {
+  background-color: #00000000 !important;
+}
+
+.marketplace-header {
+  background-color: #00000000 !important;
+}
+
+.EmeHQXR87mUskYK6xEde {
+  background-color: #00000000 !important;
+}
+
+.lyrics-lyrics-background {
+  background-color: #00000000 !important;
+}
+
+.main-actionBarBackground-background {
+  background-image: none;
+  background-color: #00000000 !important;
+  animation: none !important;
+  -webkit-animation: none !important;
+}
+
+.main-entityHeader-overlay {
+  background: none !important;
+}
+
+.main-entityHeader-background.main-entityHeader-gradient {
+  opacity: 0.5;
+  animation: none !important;
+}
+
+.main-entityHeader-background.main-entityHeader-overlay:after {
+  background-image: none !important;
+  animation: none !important;
+  -webkit-animation: none !important;
+}
+
+.pUNc2aOeOQANHrhYa1GU .RDZ61ETnag1ilfZTkVxe {
+  color: #00000000 !important;
+}
+
+.playlist-playlist-playlistContent {
+  background: #00000000 !important;
+}
+
+.UrfDp0_mKGL9hkfh9g_R,
+.UrfDp0_mKGL9hkfh9g_R:before,
+.mzBZbIt7NDzzTffimVhn,
+.WBFaUw_oOfN2m4aTxggt,
+.main-nowPlayingView-contextItemInfo:before,
+.playlist-playlist-actionBarBackground-background,
+.main-entityHeader-backgroundColor,
+.Root__now-playing-bar {
+  background: none !important;
+}
+
+.sl_aPp6GDg05ItSfmsS7 {
+  display: none;
+}
+
+.main-nowPlayingBar-nowPlayingBar {
+  min-height: 400px;
+}
+
+.main-nowPlayingBar-container {
+  flex-direction: column;
+  min-width: 280px;
+  max-width: 420px;
+}
+
+.main-nowPlayingBar-nowPlayingBar {
+  flex-direction: column;
+}
+
+[data-right-sidebar-hidden] .Root__main-view {
+  grid-area: main-view/main-view/main-view/span 1;
+}
+
+.Root__main-view {
+  background-color: #00000000 !important;
+}
+
+.main-nowPlayingBar-center {
+  width: 100%;
+}
+
+.main-nowPlayingBar-left {
+  width: 100%;
+}
+
+.HD9s7U5E1RLSWKpXmrqx {
+  background-color: #00000000;
+  margin: auto;
+  width: 100%;
+}
+
+.main-nowPlayingWidget-coverArt .cover-art {
+  height: 220px !important;
+  width: 220px !important;
+  margin: auto;
+  background-color: #00000000;
+  box-shadow: 0 0 0px var(--spice-rgb-shadow);
+}
+
+.main-nowPlayingWidget-coverArt .cover-art img {
+  border-radius: 50%;
+  animation: spin 25s linear infinite;
+  animation-play-state: paused;
+  background-color: #00000000;
+  box-shadow: 0 0 5px 5px var(--spice-text);
+}
+
+[data-testid="now-playing-bar"]:has(
+  [data-testid="control-button-playpause"][aria-label="Pause"]
+)
+  .main-nowPlayingWidget-coverArt
+  .cover-art
+  img {
+  animation-play-state: running !important;
+}
+
+.main-coverSlotCollapsed-container {
+  width: 100%;
+  height: 100%;
+}
+
+.main-coverSlotCollapsed-container> :first-child {
+  width: 100%;
+  height: 100%;
+}
+
+.main-coverSlotCollapsed-container> :first-child> :first-child {
+  width: 100%;
+  height: 100%;
+  background-color: #00000000;
+}
+
+.main-nowPlayingWidget-coverArt {
+  width: 100%;
+  height: 100%;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: #00000000;
+}
+
+.main-nowPlayingWidget-nowPlaying {
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.main-coverSlotCollapsed-expandButton {
+  right: 25%;
+}
+
+.player-controls__buttons.player-controls__buttons--new-icons {
+  order: 2;
+}
+
+.playback-bar {
+  order: 1;
+}
+
+.main-nowPlayingBar-right {
+  width: 100%;
+}
+
+.main-nowPlayingBar-extraControls {
+  justify-content: space-evenly;
+}
+
+.main-tag-container {
+  color: var(--spice-sidebar);
+}
+
+.starrynight-bg-container {
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background-color: transparent;
+}
+
+.ffFwfKcPDbmAPLXzxzKq {
+  background-color: #00000000 !important;
+}
+
+button[data-testid="cover-art-button"] {
+  height: 220px !important;
+  width: 220px !important;
+  margin: auto;
+  background-color: #00000000;
+  box-shadow: 0 0 0px var(--spice-rgb-shadow);
+  display: contents;
+}
+
+@keyframes twinkle1 {
+  0% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  20% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  40% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  60% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  80% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  100% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+}
+
+@keyframes twinkle2 {
+  0% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  20% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  40% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  60% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  80% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  100% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+}
+
+@keyframes twinkle3 {
+  0% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  20% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  40% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  60% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  80% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  100% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+}
+
+@keyframes twinkle4 {
+  0% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  20% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+
+  40% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  60% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  80% {
+    box-shadow: 0px 0px 8px 2px var(--spice-star-glow);
+  }
+
+  100% {
+    box-shadow: 0px 0px -8px 2px var(--spice-star-glow);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+Pure CSS Shooting Star Animation Effect Copyright (c) 2021 by Delroy Prithvi (https://codepen.io/delroyprithvi/pen/LYyJROR)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+.shootingstar {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--spice-shooting-star);
+  border-radius: 50%;
+  animation: animate 3s linear;
+  left: initial;
+  z-index: -1;
+}
+
+.shootingstar::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 300px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--spice-shooting-star), transparent);
+}
+
+@keyframes animate {
+  0% {
+    transform: rotate(315deg) translateX(0);
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(315deg) translateX(-1500px);
+    opacity: 0;
+  }
+}
+
+/* Spotify paints playlist/album headers with an inline cover-art colour; keep the sky visible */
+.main-view-container section[data-testid] > div[style*="background-color"],
+.main-view-container [data-testid="entity-header"] > div[style*="background-color"] {
+  background: transparent !important;
+}
+
+/* Drop the Now Playing panel; let the circular player fill the whole right column */
+.Root__right-sidebar { display: none !important; }
+.global-nav .Root__top-container {
+  grid-template-areas:
+    "top-banner global-nav global-nav"
+    "left-sidebar main-view now-playing-bar"
+    "left-sidebar main-view now-playing-bar" !important;
+}
+.Root__now-playing-bar { grid-area: now-playing-bar !important; align-self: stretch; }
+.Root__now-playing-bar .main-nowPlayingBar-nowPlayingBar { height: 100%; justify-content: center; }
+.Root__now-playing-bar .main-nowPlayingBar-container { height: calc(100% - 16px) !important; max-height: none !important; }
+.Root__now-playing-bar .main-nowPlayingBar-nowPlayingBar { gap: 28px; justify-content: center !important; }
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { height: 320px !important; width: 320px !important; }
+.Root__now-playing-bar .main-nowPlayingWidget-nowPlaying { gap: 18px; }
+.Root__now-playing-bar .main-trackInfo-name { font-size: 22px !important; }
+
+/* Vinyl mode: cover becomes the spinning centre label of a record, tonearm drops on play */
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art {
+  position: relative; overflow: visible !important; border-radius: 50%;
+  box-shadow: 0 0 calc(12px + 38px * var(--beat, 0)) calc(1px + 7px * var(--beat, 0)) rgba(var(--spice-rgb-button), calc(.35 + .5 * var(--beat, 0))) !important;
+}
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art img { box-shadow: none !important; }
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 2;
+  background:
+    conic-gradient(from 40deg, transparent 0 8%, rgba(255,255,255,.10) 12%, transparent 18% 50%, rgba(255,255,255,.10) 62%, transparent 68%),
+    repeating-radial-gradient(circle, rgba(255,255,255,.05) 0 1px, transparent 1px 3px),
+    radial-gradient(circle, #0b0b0b 0 2.2%, rgba(255,255,255,.25) 2.4% 2.8%, transparent 3% 21%, rgba(0,0,0,.6) 21.2%, #0c0c0c 22%);
+}
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art::before {
+  content: ""; position: absolute; z-index: 3; pointer-events: none;
+  top: -18px; right: -26px; width: 9px; height: 190px;
+  background: linear-gradient(90deg, #8d8d8d, #f2f2f2 45%, #9a9a9a);
+  border-top: 22px solid #d8d8d8; border-bottom: 26px solid #2a2a2a; border-radius: 10px 10px 3px 3px;
+  box-shadow: 2px 4px 10px rgba(0,0,0,.6);
+  transform-origin: 50% 11px; transform: rotate(-4deg);
+  transition: transform 900ms cubic-bezier(.3,1.4,.5,1);
+}
+[data-testid="now-playing-bar"]:has([data-testid="control-button-playpause"][aria-label="Pause"])
+  .main-nowPlayingWidget-coverArt .cover-art::before { transform: rotate(24deg); }
+
+/* Let the beat glow spill past the player's boxes */
+.Root__now-playing-bar,
+.Root__now-playing-bar .main-nowPlayingBar-container,
+.Root__now-playing-bar .main-nowPlayingBar-nowPlayingBar,
+.Root__now-playing-bar .main-nowPlayingBar-left,
+.Root__now-playing-bar .main-nowPlayingWidget-nowPlaying,
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt,
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt *:not(.cover-art *) {
+  overflow: visible !important; contain: none !important; clip-path: none !important;
+}
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art > * { overflow: hidden !important; border-radius: 50% !important; }
+
+/* Click-to-launch shooting stars */
+.sfx-shoot {
+  position: fixed; z-index: 9999; pointer-events: none; height: 2px; width: 160px;
+  border-radius: 2px; transform-origin: 100% 50%;
+  background: linear-gradient(90deg, transparent, rgba(var(--spice-rgb-shooting-star), .9));
+  filter: drop-shadow(0 0 6px rgba(var(--spice-rgb-shooting-star-glow), .9));
+  animation: sfx-shoot 900ms ease-out forwards;
+}
+.sfx-shoot::after {
+  content: ""; position: absolute; right: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%;
+  background: rgb(var(--spice-rgb-shooting-star)); box-shadow: 0 0 12px 4px rgba(var(--spice-rgb-shooting-star-glow), .9);
+}
+@keyframes sfx-shoot {
+  0%   { opacity: 0; transform: rotate(var(--r)) translateX(0) scaleX(.2); }
+  15%  { opacity: 1; transform: rotate(var(--r)) translateX(calc(var(--dx) * .15)) scaleX(1); }
+  100% { opacity: 0; transform: rotate(var(--r)) translateX(var(--dx)) scaleX(.4); }
+}
+
+/* Warp-speed overlay */
+.sfx-warp { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 9998; pointer-events: none; }
+
+/* Record swap: arm lifts, old disc slides out, new one slides in */
+body.sfx-swap .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art {
+  animation: sfx-swap 1200ms cubic-bezier(.6,0,.3,1);
+}
+body.sfx-swap [data-testid="now-playing-bar"] .main-nowPlayingWidget-coverArt .cover-art::before {
+  animation: sfx-arm 1200ms ease-in-out;
+}
+@keyframes sfx-swap {
+  0%   { transform: none; opacity: 1; }
+  40%  { transform: translateX(140%) rotate(120deg); opacity: 0; }
+  41%  { transform: translateX(-140%) rotate(-120deg); opacity: 0; }
+  85%, 100% { transform: none; opacity: 1; }
+}
+@keyframes sfx-arm {
+  0%, 100% { transform: rotate(24deg); }
+  15%, 80% { transform: rotate(-12deg); }
+}
+
+/* Home and other pages: same inline cover-colour wash at the top */
+.main-view-container main > div > div[style*="background-color"],
+.main-view-container main > section > div[style*="background-color"] {
+  background: transparent !important;
+}
+
+/* Planet: slowly rotating sphere wrapped in the current cover art */
+.sfx-planet {
+  position: fixed; top: 92px; right: 300px; width: 92px; height: 92px; z-index: 1; pointer-events: none;
+  transition: all 900ms cubic-bezier(.5,0,.2,1);
+}
+.sfx-planet-surface {
+  position: absolute; inset: 0; border-radius: 50%;
+  background-size: 200% 100%; background-repeat: repeat-x; background-position: 0 50%;
+  animation: sfx-planet-spin 40s linear infinite;
+  box-shadow:
+    inset -18px -10px 30px rgba(0,0,0,.92), inset 6px 4px 14px rgba(255,255,255,.18),
+    0 0 26px 2px rgba(var(--spice-rgb-button), .35);
+}
+.sfx-planet-ring {
+  position: absolute; left: -38%; top: 38%; width: 176%; height: 24%; border-radius: 50%;
+  border: 2px solid rgba(var(--spice-rgb-text), .35); transform: rotate(-18deg);
+  clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%); /* front half of the ring over the planet */
+}
+@keyframes sfx-planet-spin { to { background-position: -200% 50%; } }
+
+/* Cinema mode: only the sky, a giant record and the title */
+body.sfx-cinema .Root__globalNav,
+body.sfx-cinema .Root__nav-bar,
+body.sfx-cinema .Root__main-view,
+body.sfx-cinema .LayoutResizer__resize-bar { opacity: 0 !important; pointer-events: none !important; transition: opacity 600ms; }
+body.sfx-cinema .Root__now-playing-bar {
+  position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important;
+  display: grid !important; place-items: center; z-index: 50;
+}
+body.sfx-cinema .Root__now-playing-bar .main-nowPlayingBar-container { max-width: 760px !important; width: 760px !important; height: auto !important; }
+body.sfx-cinema .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { width: 540px !important; height: 540px !important; }
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-name, body.sfx-cinema .Root__now-playing-bar .main-trackInfo-name * { font-size: 44px !important; line-height: 1.15 !important; font-weight: 700 !important; }
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-artists { font-size: 20px !important; }
+body.sfx-cinema .Root__now-playing-bar .main-nowPlayingBar-center,
+body.sfx-cinema .Root__now-playing-bar .main-nowPlayingBar-right { opacity: .25; transition: opacity 300ms; }
+body.sfx-cinema .Root__now-playing-bar:hover .main-nowPlayingBar-center,
+body.sfx-cinema .Root__now-playing-bar:hover .main-nowPlayingBar-right { opacity: 1; }
+body.sfx-cinema .sfx-planet { top: 12vh; right: auto; left: 10vw; width: 170px; height: 170px; }
+
+/* ---------- Identity pass ---------- */
+
+/* Type: Futura for display (space-age, Kubrick/NASA), Avenir Next for UI */
+body, :where(body *) { font-family: "Avenir Next", "Avenir", sans-serif !important; }
+/* Section headings -> Futura */
+h2, h2 *, [class*="encore-text-title"], [class*="encore-text-title"] * {
+  font-family: "Futura", "Avenir Next", sans-serif !important; letter-spacing: .01em;
+}
+/* Hero titles ("Liked Songs", album/artist names) -> Big Caslon */
+h1, h1 * {
+  font-family: "Big Caslon", "Baskerville", serif !important;
+  font-weight: 500 !important; letter-spacing: -.015em; line-height: 1.05 !important;
+}
+/* Track + artist names stay in Avenir Next */
+.main-trackInfo-name, .main-trackInfo-name * { font-family: "Avenir Next", sans-serif !important; font-weight: 600 !important; }
+
+/* Kill Spotify green + branded chips */
+.encore-dark-theme, .encore-dark-theme .encore-base-set, .encore-dark-theme .encore-bright-accent-set {
+  --essential-bright-accent: rgb(var(--spice-rgb-button)) !important;
+  --text-bright-accent: rgb(var(--spice-rgb-button)) !important;
+  --background-bright-accent: rgb(var(--spice-rgb-button)) !important;
+}
+img[src*="equaliser"] { filter: brightness(0) invert(1); }
+button[class*="legacy-chip"] {
+  background: rgba(var(--spice-rgb-text), .06) !important; border: 1px solid rgba(var(--spice-rgb-text), .14) !important;
+  border-radius: 999px !important; backdrop-filter: blur(8px);
+}
+button[class*="legacy-chip"][aria-checked="true"], button[class*="legacy-chip"][aria-pressed="true"] {
+  background: rgb(var(--spice-rgb-button)) !important; color: rgb(var(--spice-rgb-main)) !important; border-color: transparent !important;
+}
+
+/* Top bar -> floating glass dock at the bottom */
+.Root__globalNav {
+  position: fixed !important; top: auto !important; bottom: 18px !important; left: 50% !important; transform: translateX(-50%);
+  width: auto !important; height: 60px !important; padding: 0 18px !important; z-index: 60;
+  border-radius: 999px; background: rgba(14, 14, 18, .55) !important;
+  backdrop-filter: blur(22px) saturate(1.5); -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,.09); box-shadow: 0 14px 50px rgba(0,0,0,.65);
+}
+.main-view-container__scroll-node-child, .main-view-container [data-overlayscrollbars-viewport] > div { padding-bottom: 96px; }
+.Root__top-container { padding-top: 12px; }
+
+/* Shelves: featured card + carousel */
+.sfx-shelf {
+  display: flex !important; overflow-x: auto !important; overflow-y: visible; gap: 18px !important;
+  scroll-snap-type: x mandatory; scrollbar-width: none; padding: 6px 4px 18px; align-items: flex-end;
+  grid-template-columns: none !important;
+}
+.sfx-shelf::-webkit-scrollbar { display: none; }
+.sfx-shelf > * { flex: 0 0 180px !important; scroll-snap-align: start; transition: flex-basis 700ms cubic-bezier(.3,.8,.2,1), opacity 500ms; opacity: .75; }
+.sfx-shelf > .sfx-feat { flex-basis: 340px !important; opacity: 1; }
+.sfx-shelf > .sfx-feat [data-encore-id="card"] { box-shadow: 0 0 40px rgba(var(--spice-rgb-button), .18); border-radius: 14px; }
+
+/* Progress ring replaces the flat bar */
+.Root__now-playing-bar .playback-bar { display: none !important; }
+.sfx-ring { position: absolute; inset: -7%; width: 114%; height: 114%; z-index: 2; transform: rotate(-90deg); pointer-events: none; overflow: visible; }
+.sfx-ring circle { fill: none; }
+.sfx-ring-track { stroke: rgba(var(--spice-rgb-text), .10); stroke-width: 1; }
+.sfx-ring-fill { stroke: rgb(var(--spice-rgb-button)); stroke-width: 1.4; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(var(--spice-rgb-button), .9)); }
+.sfx-ring-hit { stroke: transparent; stroke-width: 6; pointer-events: stroke; cursor: pointer; }
+
+.Root__now-playing-bar .main-nowPlayingWidget-coverArtContainer,
+.Root__now-playing-bar .main-coverSlotCollapsed-container { overflow: visible !important; }
+
+/* Window buttons no longer sit on the library rail */
+.Root__nav-bar { margin-top: 30px !important; }
+
+/* Featured shelves: centre the small cards against the big one */
+.sfx-shelf { align-items: center !important; }
+
+/* Track list without the table: no header row, no album/date columns, soft glow rows */
+.main-view-container .main-trackList-trackListHeaderRow,
+.main-view-container .main-trackList-trackListHeader { display: none !important; }
+.main-view-container .main-trackList-rowSectionVariable { display: none !important; }
+.main-view-container .main-trackList-trackListRowGrid { grid-template-columns: [index] 32px [first] minmax(0, 1fr) [last] 120px !important; }
+.main-view-container .main-trackList-trackListRow { border-radius: 12px; transition: background 200ms, box-shadow 200ms; }
+.main-view-container .main-trackList-trackListRow:hover {
+  background: rgba(var(--spice-rgb-text), .05) !important;
+  box-shadow: 0 0 24px rgba(var(--spice-rgb-button), .08);
+}
+
+/* Spotify-made covers (Daily Mix, Discover Weekly, DJ, daylists) -> monochrome so their branding stops shouting */
+img[src*="pickasso.spotifycdn.com"], img[src*="seed-mix-image"], img[src*="dailymix-images"],
+img[src*="daylist.spotifycdn.com"], img[src*="lexicon-assets"], img[src*="misc.scdn.co"], img[src*="misc.spotifycdn.com"],
+img[src*="newjams-images"], img[src*="mosaic.scdn.co"] {
+  filter: grayscale(1) contrast(1.15) brightness(.92);
+}
+
+/* Elapsed / total time */
+.sfx-time { width: 100%; text-align: center; margin-top: 6px; font-size: 12px; letter-spacing: .08em; color: rgba(var(--spice-rgb-subtext), .8); font-variant-numeric: tabular-nums; }
+
+/* Up next mini records */
+.sfx-next { width: 100%; max-width: 340px; margin: 6px auto 0; display: flex; flex-direction: column; gap: 10px; }
+.sfx-next-label { font-family: "Futura", sans-serif; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgba(var(--spice-rgb-subtext), .7); }
+.sfx-next-item { display: flex; align-items: center; gap: 12px; opacity: .85; }
+.sfx-mini {
+  flex: 0 0 38px; height: 38px; border-radius: 50%; position: relative; overflow: hidden;
+  background: repeating-radial-gradient(circle, #151515 0 1px, #0b0b0b 1px 3px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 4px 10px rgba(0,0,0,.6);
+}
+.sfx-mini img { position: absolute; inset: 30%; width: 40%; height: 40%; border-radius: 50%; object-fit: cover; }
+.sfx-next-text { min-width: 0; }
+.sfx-next-title { font-size: 13px; font-weight: 600; color: var(--spice-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sfx-next-artist { font-size: 12px; color: var(--spice-subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.sfx-cinema .sfx-next { display: none; }
+
+/* Room for "up next": tighter stack, record a touch smaller, planet clear of the ring */
+.Root__now-playing-bar .main-nowPlayingBar-nowPlayingBar { gap: 14px !important; }
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { height: 290px !important; width: 290px !important; }
+.sfx-planet { top: 40px; right: 330px; width: 74px; height: 74px; }
+
+/* Dock: drop friends + notifications */
+.Root__globalNav button[aria-label="What's New"],
+.Root__globalNav button[aria-label="Listening activity"],
+.Root__globalNav button[aria-label="Friend Activity"] { display: none !important; }
+
+/* ---------- Startup intro ---------- */
+body.sfx-intro-on #main { opacity: 0; }
+#main { transition: opacity 900ms ease; }
+.sfx-intro {
+  position: fixed; inset: 0; z-index: 100000; background: #000; cursor: pointer;
+  transition: background-color 900ms ease;
+}
+.sfx-intro canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity 700ms ease 150ms; }
+.sfx-intro.out { background-color: transparent; pointer-events: none; }
+.sfx-intro.out canvas { opacity: 0; }
+.sfx-intro-title {
+  position: absolute; left: 0; right: 0; bottom: 9vh; text-align: center; opacity: var(--title, 0);
+  transform: translateY(calc((1 - var(--title, 0)) * 14px)); color: #fff; pointer-events: none;
+}
+.sfx-intro-title .t { font-family: "Big Caslon", serif !important; font-size: 54px; letter-spacing: -.01em; text-shadow: 0 0 30px rgba(255,255,255,.35); }
+.sfx-intro-title .a { margin-top: 6px; font-family: "Futura", sans-serif !important; font-size: 13px; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.6); }
+.sfx-intro-flash {
+  position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; opacity: 0; pointer-events: none;
+  box-shadow: 0 0 60px 30px rgba(255,255,255,.9), 0 0 0 2px rgba(255,255,255,.9);
+}
+.sfx-intro.out .sfx-intro-flash { animation: sfx-flash 900ms cubic-bezier(.1,.8,.2,1) forwards; }
+@keyframes sfx-flash {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(60); box-shadow: 0 0 20px 2px rgba(255,255,255,0), 0 0 0 .3px rgba(255,255,255,.6); }
+}
+
+/* ---------- Liked-song gold stars ---------- */
+.sfx-gold-layer, .sfx-weather { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.sfx-gold {
+  position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); border-radius: 50%;
+  background: #ffe6a8; box-shadow: 0 0 6px 2px rgba(255, 205, 110, .75), 0 0 18px 4px rgba(255, 180, 60, .25);
+  animation: sfx-gold-twinkle 4s ease-in-out infinite; animation-delay: calc(var(--s) * -1.3s);
+}
+.sfx-gold.fresh { animation: sfx-gold-land 1.4s cubic-bezier(.2,1.6,.4,1) both, sfx-gold-twinkle 4s ease-in-out 1.4s infinite; }
+@keyframes sfx-gold-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@keyframes sfx-gold-land { 0% { transform: scale(0); box-shadow: 0 0 60px 30px rgba(255, 210, 120, .9); } 100% { transform: scale(1); } }
+.sfx-gold-streak {
+  position: fixed; z-index: 9999; pointer-events: none; width: 260px; height: 3px; margin-top: -1.5px;
+  transform-origin: 100% 50%; border-radius: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255, 200, 100, .9) 70%, #fff6dd);
+  filter: drop-shadow(0 0 8px rgba(255, 190, 80, .95));
+  animation: sfx-gold-streak 900ms cubic-bezier(.3,.6,.3,1) forwards;
+}
+/* starts up-right of the landing point, travels down-left onto it (tail trails behind, up-right) */
+@keyframes sfx-gold-streak {
+  0%   { opacity: 0; transform: rotate(135deg) translateX(-420px) scaleX(.3); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: rotate(135deg) translateX(0) scaleX(1); }
+}
+
+/* ---------- Song weather ---------- */
+.sfx-weather > div { position: absolute; opacity: 0; transition: opacity 2.5s ease; }
+.sfx-weather .fog {
+  width: 90vw; height: 70vh; border-radius: 50%; filter: blur(60px);
+  background: radial-gradient(closest-side, rgba(var(--spice-rgb-text), .10), transparent);
+}
+.sfx-weather .f1 { left: -20vw; top: 30vh; animation: sfx-fog 38s ease-in-out infinite alternate; }
+.sfx-weather .f2 { right: -25vw; top: -5vh; animation: sfx-fog 46s ease-in-out infinite alternate-reverse; }
+@keyframes sfx-fog { to { transform: translate(18vw, -8vh) scale(1.2); } }
+.sfx-weather .aur {
+  left: -10vw; width: 120vw; height: 26vh; top: 2vh; filter: blur(40px); mix-blend-mode: screen; border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(80, 255, 190, .22), rgba(var(--spice-rgb-button), .18), rgba(140, 120, 255, .2), transparent);
+  animation: sfx-aurora 18s ease-in-out infinite alternate;
+}
+.sfx-weather .a2 { top: 10vh; animation-duration: 24s; animation-direction: alternate-reverse; opacity: 0; }
+.sfx-weather .a3 { top: 18vh; height: 18vh; animation-duration: 31s; }
+@keyframes sfx-aurora { 0% { transform: skewX(-18deg) translateX(-6vw) scaleY(.8); } 100% { transform: skewX(14deg) translateX(8vw) scaleY(1.25); } }
+.sfx-weather[data-mood="fog"] .fog { opacity: 1; }
+.sfx-weather[data-mood="aurora"] .aur { opacity: .9; }
+.sfx-weather[data-mood="aurora"] .a2 { opacity: .6; }
+/* hype: the whole sky breathes with the beat */
+body[data-sfx-mood="hype"] .Root__top-container { filter: brightness(calc(1 + .25 * var(--beat, 0))); }
+
+/* ---------- Page transitions ---------- */
+.Root__main-view.sfx-page-in { animation: sfx-page-in 520ms cubic-bezier(.2,.8,.2,1); }
+@keyframes sfx-page-in { from { opacity: 0; transform: scale(1.045); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
+
+
+/* ---------- Slow camera drift: the sky pans a little over a few minutes ---------- */
+/* uses the separate `translate` property so the stars keep their own twinkle animations */
+.starrynight-bg-container,
+.sfx-gold-layer, .sfx-weather { translate: var(--sfx-dx, 0) var(--sfx-dy, 0); }
+
+/* ---------- Dust + scratches on the record ---------- */
+.sfx-dust {
+  position: absolute; inset: 0; border-radius: 50%; overflow: hidden; pointer-events: none; z-index: 3; /* above the disc pseudo-element */
+  /* static light: dust shows faintly everywhere, brightly where the sheen hits */
+  -webkit-mask-image: conic-gradient(from 40deg, rgba(0,0,0,.45) 0 6%, #000 12%, rgba(0,0,0,.45) 19% 56%, #000 62%, rgba(0,0,0,.45) 69%);
+  mask-image: conic-gradient(from 40deg, rgba(0,0,0,.45) 0 6%, #000 12%, rgba(0,0,0,.45) 19% 56%, #000 62%, rgba(0,0,0,.45) 69%);
+  mix-blend-mode: screen; opacity: .6;
+}
+.sfx-dust-spin {
+  position: absolute; inset: 0; background-size: 100% 100%;
+  animation: spin 25s linear infinite; animation-play-state: paused;
+}
+[data-testid="now-playing-bar"]:has([data-testid="control-button-playpause"][aria-label="Pause"]) .sfx-dust-spin { animation-play-state: running; }

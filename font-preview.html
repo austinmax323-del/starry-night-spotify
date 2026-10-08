@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Title Fonts</title>
+<style>
+body{margin:0;background:#050507 radial-gradient(#ffffff22 1px,transparent 1px) 0 0/38px 38px;color:#fff;font-family:"Avenir Next";padding:24px}
+.r{display:block;border-bottom:1px solid #ffffff14;padding:10px 0}
+.n{color:#888;font-size:13px;margin-right:8px}.l{color:#999;font-size:13px}.t{display:block;font-size:40px;line-height:1.1;white-space:nowrap}
+</style>
+<script>
+const F=[
+["Avenir Next Heavy","font-family:'Avenir Next';font-weight:900"],
+["Helvetica Neue Bold, tight","font-family:'Helvetica Neue';font-weight:700;letter-spacing:-.04em"],
+["Gill Sans Bold","font-family:'Gill Sans';font-weight:700"],
+["Optima Bold","font-family:Optima;font-weight:700"],
+["Bodoni 72 Bold","font-family:'Bodoni 72';font-weight:700"],
+["Baskerville Semibold","font-family:Baskerville;font-weight:600"],
+["Copperplate","font-family:Copperplate;font-weight:700"],
+["Big Caslon","font-family:'Big Caslon'"],
+["Menlo Bold (mono)","font-family:Menlo;font-weight:700;letter-spacing:-.03em"],
+["SF Pro Rounded Heavy","font-family:'SF Pro Rounded',ui-rounded;font-weight:800"],
+["Impact","font-family:Impact"],
+["Avenir Next Ultralight, wide","font-family:'Avenir Next';font-weight:200;letter-spacing:.18em;text-transform:uppercase"],
+];
+document.write(F.map((f,i)=>`<div class="r"><span class="n">${i+1}</span><span class="l">${f[0]}</span><span class="t" style="${f[1]}">Liked Songs</span></div>`).join(""));
+</script>

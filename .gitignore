@@ -1,0 +1,6 @@
+# Only the active theme is ours; the other 16 are stock downloads (~100 MB of screenshots)
+Themes/*
+!Themes/StarryNight/
+# local backups and scratch
+*.bak-*
+.DS_Store
