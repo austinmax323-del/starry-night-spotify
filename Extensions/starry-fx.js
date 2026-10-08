@@ -524,6 +524,6 @@ sfxEvery(() => {
   document.addEventListener("scroll", () => {
     document.body.classList.add("sfx-scrolling");
     clearTimeout(t);
-    t = setTimeout(() => document.body.classList.remove("sfx-scrolling"), 700);
+    t = setTimeout(() => document.body.classList.remove("sfx-scrolling"), 500);
   }, true);
 })();
