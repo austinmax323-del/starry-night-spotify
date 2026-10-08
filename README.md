@@ -3,6 +3,19 @@
 My [Spicetify](https://spicetify.app) setup: the StarryNight theme pushed until the client stops reading as Spotify.
 A night sky behind everything, a spinning vinyl player, a WebGL startup intro, and effects that react to what's playing.
 
+![Home](screenshots/home.jpg)
+
+| | |
+| --- | --- |
+| ![Liked Songs](screenshots/liked-songs.jpg) | ![Artist page](screenshots/artist.jpg) |
+| ![Cinema mode](screenshots/cinema.jpg) | ![Schemes and effect switches](screenshots/schemes.jpg) |
+
+**Startup intro** — warp, stars converge, the record forms with a title card, then it flies into the player.
+
+| | | |
+| --- | --- | --- |
+| ![Warp](screenshots/intro-warp.jpg) | ![Converging](screenshots/intro-converge.jpg) | ![Record forms](screenshots/intro-record.jpg) |
+
 ## What's in it
 
 **Player**
