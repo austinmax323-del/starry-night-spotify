@@ -88,7 +88,16 @@
     const pix = await coverPixels();
     const meta = Spicetify.Player.data?.item?.metadata || {};
     const esc = s => String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    title.innerHTML = `<div class="t">${esc(Spicetify.Player.data?.item?.name || meta.title)}</div><div class="a">${esc(meta.artist_name)}</div>`;
+    // first launch of the day: "Welcome back" card, the song underneath
+    const today = new Date().toDateString();
+    let first = false;
+    try { first = localStorage.getItem("sfx-intro-day") !== today; localStorage.setItem("sfx-intro-day", today); } catch {}
+    let who = "";
+    if (first) { try { who = (await Spicetify.Platform?.UserAPI?.getUser?.())?.displayName || ""; } catch {} }
+    const song = esc(Spicetify.Player.data?.item?.name || meta.title), artist = esc(meta.artist_name);
+    title.innerHTML = first
+      ? `<div class="t">Welcome back${who ? ", " + esc(who) : ""}</div><div class="a">${song}${artist ? " · " + artist : ""}</div>`
+      : `<div class="t">${song}</div><div class="a">${artist}</div>`;
 
     // Two vertices per particle (head/tail) so the jump draws as streaks
     const R = new Float32Array(N * 2 * 3), Dd = new Float32Array(N * 2 * 2), C = new Float32Array(N * 2 * 3), E = new Float32Array(N * 2);

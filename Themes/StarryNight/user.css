@@ -866,3 +866,73 @@ section[data-testid="component-shelf"] { margin-bottom: 44px !important; }
 [data-encore-id="card"] .e-10860-line-clamp { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
 .main-cardImage-imageWrapper:has(img[src*="/img/radio/"]) { background: transparent !important; box-shadow: none !important; }
 [data-encore-id="card"] .encore-text-body-small { -webkit-line-clamp: 1 !important; line-clamp: 1 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+
+/* ---------- Artist pages: poster ---------- */
+/* 1. photo becomes a huge faded backdrop that melts into the stars */
+.main-view-container [data-testid="background-image"] {
+  filter: grayscale(1) contrast(1.1); opacity: .38 !important;
+  -webkit-mask-image: linear-gradient(#000 35%, transparent 96%); mask-image: linear-gradient(#000 35%, transparent 96%);
+}
+/* 2. name in Big Caslon, listeners in small Futura caps */
+[data-testid="adaptiveEntityTitle"], [data-testid="adaptiveEntityTitle"] * {
+  font-family: "Big Caslon", serif !important; font-weight: 500 !important; letter-spacing: -.015em !important;
+}
+.sfx-listeners { font-family: "Futura", sans-serif !important; font-size: 12px !important; letter-spacing: .28em; text-transform: uppercase; opacity: .75; }
+/* 7. verified badge -> gold star */
+svg.sfx-star { fill: #ffd98a !important; color: #ffd98a !important; filter: drop-shadow(0 0 5px rgba(255, 200, 100, .7)); }
+/* 3. popular tracks: Futura numbers, covers as small records that spin on hover */
+[data-testid="artist-page"] .main-trackList-rowSectionIndex { font-family: "Futura", sans-serif !important; letter-spacing: .12em; opacity: .55; }
+[data-testid="artist-page"] .main-trackList-rowSectionStart img {
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.12), 0 4px 10px rgba(0,0,0,.6);
+  transition: transform .4s;
+}
+[data-testid="artist-page"] .main-trackList-trackListRow:hover .main-trackList-rowSectionStart img { animation: spin 3s linear infinite; }
+/* 4. discography: a record half out of each sleeve; hover slides it further and spins it */
+section[aria-label="Discography"] .main-card-imageContainer { position: relative; overflow: visible !important; isolation: isolate; }
+section[aria-label="Discography"] .main-card-imageContainer::before {
+  content: ""; position: absolute; inset: 4%; z-index: -1; border-radius: 50%;
+  background:
+    conic-gradient(from 30deg, transparent 0 8%, rgba(255,255,255,.14) 12%, transparent 18% 50%, rgba(255,255,255,.14) 62%, transparent 68%),
+    radial-gradient(circle, #3a3a3a 0 6%, #0b0b0b 6.5% 7.5%, transparent 8%),
+    repeating-radial-gradient(circle, #262626 0 1px, #121212 1px 3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.22);
+  transform: translateX(24%); transition: transform .55s cubic-bezier(.3,.8,.2,1);
+}
+section[aria-label="Discography"] [data-encore-id="card"]:hover .main-card-imageContainer::before { transform: translateX(42%) rotate(160deg); }
+section[aria-label="Discography"] .main-cardImage-imageWrapper { position: relative; z-index: 1; }
+/* 5. sky tint from the artist photo */
+.sfx-artist-tint {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
+  background: radial-gradient(ellipse 70% 60% at 30% 10%, rgba(var(--tint, 120,120,140), .22), transparent 70%);
+}
+.sfx-artist-tint.on { opacity: 1; }
+body:not(.sfx-on-artist) .sfx-artist-tint { opacity: 0; }
+
+/* ---------- Search: browse tiles as dark glass with a coloured glow ---------- */
+.main-view-container a > div[style*="background-color"]:has(> img.main-image-image):has(> span) {
+  position: relative; overflow: hidden; border-radius: 16px !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.main-view-container a > div[style*="background-color"]:has(> img.main-image-image):has(> span)::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(circle at 82% 88%, transparent 0 12%, rgba(8,8,12,.6) 38%, rgba(8,8,12,.94) 70%);
+  transition: opacity .4s;
+}
+.main-view-container a:hover > div[style*="background-color"]:has(> img.main-image-image):has(> span)::before { opacity: .75; }
+.main-view-container a > div[style*="background-color"]:has(> img.main-image-image):has(> span) > img {
+  transform: none !important; border-radius: 50% !important; width: 34% !important; height: auto !important; aspect-ratio: 1;
+  right: 8% !important; bottom: 10% !important; z-index: 2; object-fit: cover;
+  box-shadow: 0 0 30px 6px rgba(255,255,255,.12);
+}
+.main-view-container a > div[style*="background-color"]:has(> img.main-image-image):has(> span) > span {
+  position: relative; z-index: 2; font-family: "Futura", sans-serif !important; font-weight: 500 !important;
+  letter-spacing: .14em; text-transform: uppercase; font-size: 15px !important;
+}
+
+/* ---------- Dock slides down while scrolling ---------- */
+.Root__globalNav { transition: transform .45s cubic-bezier(.3,.8,.2,1), opacity .35s !important; }
+body.sfx-scrolling .Root__globalNav { transform: translate(-50%, 150%) !important; opacity: 0; }
+/* artist (and any other) pages: the empty cover-colour wash under the header, plus its black backing */
+.main-view-container div[style^="background-color"]:empty { background: transparent !important; }
+.main-view-container div:has(> div[style^="background-color"]:empty) { background: transparent !important; }

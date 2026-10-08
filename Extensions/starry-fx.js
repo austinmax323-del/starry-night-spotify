@@ -12,6 +12,17 @@
   };
 })();
 
+// One scheduler for every DOM poller: a single rAF loop instead of ~10 setIntervals,
+// and nothing runs while Spotify is hidden or minimised.
+(function sfxScheduler() {
+  const tasks = [];
+  window.sfxEvery = (fn, ms) => tasks.push({ fn, ms, next: 0 });
+  (function loop(now) {
+    if (!document.hidden) for (const t of tasks) if (now >= t.next) { t.next = now + t.ms; try { t.fn(); } catch {} }
+    requestAnimationFrame(loop);
+  })(0);
+})();
+
 // Starry FX: beat-reactive glow on the vinyl player (--beat 0..1 on :root).
 (function starryFx() {
   if (!Spicetify?.Player?.data || !Spicetify.getAudioData) return setTimeout(starryFx, 300);
@@ -83,7 +94,7 @@ document.addEventListener("click", e => {
   }
   Spicetify.Player.addEventListener("songchange", load);
   load();
-  setInterval(() => {
+  sfxEvery(() => {
     if (!sections || !Spicetify.Player.isPlaying()) return;
     const t = Spicetify.Player.getProgress();
     if (i && sections[i - 1].t > t + 1000) i = 0;
@@ -219,8 +230,8 @@ document.addEventListener("click", e => {
       g.addEventListener("mouseleave", () => delete g.dataset.hold);
     }
   }
-  setInterval(tagShelves, 1000);
-  setInterval(() => {
+  sfxEvery(tagShelves, 1000);
+  sfxEvery(() => {
     for (const g of document.querySelectorAll(".sfx-shelf")) {
       if (g.dataset.hold || !g.isConnected) continue;
       const items = [...g.children];
@@ -240,7 +251,7 @@ document.addEventListener("click", e => {
   const fmt = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
   const img = u => (u || "").replace("spotify:image:", "https://i.scdn.co/image/");
   let lastQ = "";
-  setInterval(() => {
+  sfxEvery(() => {
     try {
       const info = document.querySelector(".Root__now-playing-bar .main-trackInfo-container");
       if (info) {
@@ -310,7 +321,7 @@ document.addEventListener("click", e => {
   }
   window.sfxLikeStar = celebrate;
   let uri = null, liked = null;
-  setInterval(() => {
+  sfxEvery(() => {
     try {
       layer();
       const u = Spicetify.Player.data?.item?.uri, h = !!Spicetify.Player.getHeart();
@@ -359,7 +370,7 @@ document.addEventListener("click", e => {
     }, 1800);
   }
   Spicetify.Player.addEventListener("songchange", () => setTimeout(update, 200));
-  setInterval(() => { host(); update(); }, 1500);
+  sfxEvery(() => { host(); update(); }, 1500);
 })();
 
 // Page transitions: zoom through the stars
@@ -400,7 +411,7 @@ document.addEventListener("click", e => {
     x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(t) * d, py + Math.sin(t) * d); x.stroke();
   }
   const url = c.toDataURL("image/png");
-  setInterval(() => {
+  sfxEvery(() => {
     const art = document.querySelector(".Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art");
     if (!art || art.querySelector(":scope > .sfx-dust")) return;
     const d = document.createElement("div");
@@ -413,7 +424,7 @@ document.addEventListener("click", e => {
 // Slow camera drift: a gentle Lissajous path, ~2.5 min per loop
 (function drift() {
   const root = document.documentElement.style, t0 = performance.now();
-  setInterval(() => {
+  sfxEvery(() => {
     const t = (performance.now() - t0) / 1000;
     root.setProperty("--sfx-dx", `${(Math.sin(t * 2 * Math.PI / 150) * 2.0).toFixed(3)}vw`);
     root.setProperty("--sfx-dy", `${(Math.sin(t * 2 * Math.PI / 110 + 1) * 1.4).toFixed(3)}vh`);
@@ -421,7 +432,7 @@ document.addEventListener("click", e => {
 })();
 
 // The player loads a 64px cover; swap in the 640px version so the record label stays sharp
-setInterval(() => {
+sfxEvery(() => {
   const img = document.querySelector(".Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art img");
   if (img && /ab67616d0000(4851|1e02)/.test(img.src)) {
     img.src = img.src.replace(/ab67616d0000(4851|1e02)/, "ab67616d0000b273");
@@ -430,7 +441,7 @@ setInterval(() => {
 }, 600);
 
 // Artist pages: a "More" pill that reveals the hidden sections (fans also like, appears on, ...)
-setInterval(() => {
+sfxEvery(() => {
   const page = document.querySelector('[data-testid="artist-page"]');
   if (!page) { document.body.classList.remove("sfx-artist-more"); return; }
   if (page.querySelector(".sfx-more-pill")) return;
@@ -445,7 +456,7 @@ setInterval(() => {
 }, 800);
 
 // Home shelves as numbered chapters: "01 — Recommended Stations"
-setInterval(() => {
+sfxEvery(() => {
   let n = 0;
   for (const sec of document.querySelectorAll('section[data-testid="component-shelf"]')) {
     const h = sec.querySelector("h2");
@@ -455,3 +466,64 @@ setInterval(() => {
     if (h.dataset.ch !== ch) h.dataset.ch = ch;
   }
 }, 800);
+
+// ---------- Artist pages: poster treatment ----------
+(function artistPoster() {
+  const STAR = '<path d="M12 2.2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17.1l-6.1 3.5 1.5-6.8L2.2 9.2l6.9-.7z"/>';
+  let tintFor = null;
+  function tintLayer() {
+    const h = document.querySelector(".Root__top-container");
+    if (!h) return null;
+    let t = h.querySelector(":scope > .sfx-artist-tint");
+    if (!t) { t = document.createElement("div"); t.className = "sfx-artist-tint"; h.prepend(t); }
+    return t;
+  }
+  async function sample(url) {
+    const img = new Image(); img.crossOrigin = "anonymous"; img.src = url;
+    await img.decode();
+    const c = document.createElement("canvas"); c.width = c.height = 24;
+    const x = c.getContext("2d"); x.drawImage(img, 0, 0, 24, 24);
+    const d = x.getImageData(0, 0, 24, 24).data;
+    let best = [120, 120, 140], score = -1;
+    for (let i = 0; i < d.length; i += 4) {
+      const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]);
+      const sc = (mx - mn) * mx;
+      if (sc > score) { score = sc; best = [d[i], d[i + 1], d[i + 2]]; }
+    }
+    return best.join(",");
+  }
+  window.sfxEvery(() => {
+    const page = document.querySelector('[data-testid="artist-page"]');
+    const tint = tintLayer();
+    if (!page) { if (tint) tint.classList.remove("on"); tintFor = null; return; }
+    document.body.classList.add("sfx-on-artist");
+    // monthly listeners -> small caps label
+    for (const el of document.querySelectorAll(".main-entityHeader-headerText span, .main-entityHeader-headerText div")) {
+      if (el.children.length === 0 && /monthly listeners/i.test(el.textContent)) el.classList.add("sfx-listeners");
+    }
+    // verified badge -> gold star
+    for (const b of document.querySelectorAll('.main-view-container svg[data-encore-id="verifiedBadge"]:not(.sfx-star)')) {
+      b.classList.add("sfx-star"); b.innerHTML = STAR + "<title>Verified</title>";
+    }
+    // sky tint from the artist photo
+    // banner photo if the artist has one, otherwise the round profile picture
+    const bg = document.querySelector('.main-view-container [data-testid="background-image"]');
+    const m = bg && getComputedStyle(bg).backgroundImage.match(/url\("?(.*?)"?\)/);
+    const src = m?.[1] || document.querySelector(".main-entityHeader-container img")?.src;
+    if (src && src !== tintFor && tint) {
+      tintFor = src;
+      sample(src).then(rgb => { tint.style.setProperty("--tint", rgb); tint.classList.add("on"); }).catch(() => {});
+    }
+  }, 700);
+  window.sfxEvery(() => { if (!document.querySelector('[data-testid="artist-page"]')) document.body.classList.remove("sfx-on-artist"); }, 700);
+})();
+
+// ---------- Dock slides away while scrolling ----------
+(function dockOnScroll() {
+  let t = null;
+  document.addEventListener("scroll", () => {
+    document.body.classList.add("sfx-scrolling");
+    clearTimeout(t);
+    t = setTimeout(() => document.body.classList.remove("sfx-scrolling"), 700);
+  }, true);
+})();
