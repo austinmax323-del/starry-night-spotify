@@ -527,3 +527,31 @@ sfxEvery(() => {
     t = setTimeout(() => document.body.classList.remove("sfx-scrolling"), 500);
   }, true);
 })();
+
+// Page flags for page-specific styling (search results, album pages)
+window.sfxEvery(() => {
+  const path = Spicetify.Platform?.History?.location?.pathname || "";
+  const onSearch = /^\/search\/./.test(path);
+  document.body.classList.toggle("sfx-on-search", onSearch);
+  // only the very first result row on the page is the hero
+  const first = onSearch && document.querySelector('.main-view-container [data-testid="media"]')?.closest('[role="row"]');
+  for (const r of document.querySelectorAll(".sfx-top-hit")) if (r !== first) r.classList.remove("sfx-top-hit");
+  if (first) first.classList.add("sfx-top-hit");
+  const onAlbum = path.startsWith("/album/");
+  if (onAlbum && document.body.dataset.sfxAlbum !== path) {
+    // replay the record slide-out each time a new album opens
+    document.body.dataset.sfxAlbum = path;
+    document.body.classList.remove("sfx-album-in"); void document.body.offsetWidth;
+    document.body.classList.add("sfx-album-in");
+  }
+  document.body.classList.toggle("sfx-on-album", onAlbum);
+  if (!onAlbum) delete document.body.dataset.sfxAlbum;
+}, 300);
+
+// Right-click menus: gold star on the Like / Liked Songs entries
+window.sfxEvery(() => {
+  for (const it of document.querySelectorAll('ul[role="menu"] [role="menuitem"]:not(.sfx-seen)')) {
+    it.classList.add("sfx-seen");
+    if (/liked songs|^\s*like\s*$/i.test(it.textContent)) it.classList.add("sfx-like-item");
+  }
+}, 150);
