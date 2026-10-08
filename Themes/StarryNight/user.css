@@ -821,3 +821,15 @@ body.sfx-off-drift .starrynight-bg-container, body.sfx-off-drift .sfx-gold-layer
 body.sfx-off-glow .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { box-shadow: 0 0 14px 1px rgba(var(--spice-rgb-button), .35) !important; }
 body.sfx-off-swap .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art,
 body.sfx-off-swap .main-nowPlayingWidget-coverArt .cover-art::before { animation: none !important; }
+
+/* ---------- Artist pages: hide the clutter behind one "More" pill ---------- */
+body:not(.sfx-artist-more) [data-testid="artist-page"] section:is(
+  [aria-label="Fans also like"], [aria-label="Appears On"], [aria-label="Discovered on"],
+  [aria-label^="Merch"], [aria-label*="oncert"], [aria-label^="On tour"], [aria-label^="Live events"]
+) { display: none !important; }
+.sfx-more-pill {
+  display: block; margin: 28px auto 40px; padding: 10px 22px; border-radius: 999px; cursor: pointer;
+  font-family: "Futura", sans-serif !important; font-size: 11px; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--spice-text); background: rgba(var(--spice-rgb-text), .06); border: 1px solid rgba(var(--spice-rgb-text), .16);
+}
+.sfx-more-pill:hover { background: rgba(var(--spice-rgb-text), .12); }

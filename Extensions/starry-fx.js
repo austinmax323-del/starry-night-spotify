@@ -427,3 +427,18 @@ setInterval(() => {
     img.removeAttribute("srcset");
   }
 }, 600);
+
+// Artist pages: a "More" pill that reveals the hidden sections (fans also like, appears on, ...)
+setInterval(() => {
+  const page = document.querySelector('[data-testid="artist-page"]');
+  if (!page) { document.body.classList.remove("sfx-artist-more"); return; }
+  if (page.querySelector(".sfx-more-pill")) return;
+  const hidden = page.querySelectorAll('section[aria-label="Fans also like"], section[aria-label="Appears On"], section[aria-label="Discovered on"]');
+  if (!hidden.length) return;
+  const b = document.createElement("button");
+  b.className = "sfx-more-pill";
+  const label = () => (b.textContent = document.body.classList.contains("sfx-artist-more") ? "Less" : "More");
+  label();
+  b.onclick = () => { document.body.classList.toggle("sfx-artist-more"); label(); };
+  page.appendChild(b);
+}, 800);
