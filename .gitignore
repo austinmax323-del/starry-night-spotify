@@ -4,3 +4,4 @@ Themes/*
 # local backups and scratch
 *.bak-*
 .DS_Store
+font-preview.html
