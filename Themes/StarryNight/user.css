@@ -1052,6 +1052,7 @@ body.sfx-on-search .Root__globalNav .main-globalNav-searchInputSection,
 .main-entityHeader-container.sfx-cover-glow::before {
   content: ""; position: absolute; z-index: -1; left: 4%; top: -10%; width: 60%; height: 120%;
   background: var(--sfx-cover) center / cover; filter: blur(70px) saturate(1.4); opacity: .35; border-radius: 50%; pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%); mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
 }
 
 /* ---------- 6. Gold sparks off the like button ---------- */
@@ -1091,7 +1092,7 @@ body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", s
 
 /* ---------- Constellations ---------- */
 .sfx-const { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-.sfx-con { position: absolute; margin: 0; width: 170px; opacity: .32; transition: opacity 1.2s, filter 1.2s; }
+.sfx-con { position: absolute; margin: 0; width: 170px; opacity: .32; transform: scale(.62); transform-origin: 0 0; transition: opacity 1.2s, filter 1.2s; }
 .sfx-con svg { width: 170px; height: 110px; overflow: visible; }
 .sfx-con line { stroke: rgba(var(--spice-rgb-text), .35); stroke-width: .6; }
 .sfx-con circle { fill: rgb(var(--spice-rgb-star)); }
@@ -1121,3 +1122,10 @@ body.sfx-off-glow .sfx-glow { display: none; }
 @keyframes twinkle2 { 0%, 100% { opacity: .9; } 40% { opacity: .3; } 70% { opacity: 1; } }
 @keyframes twinkle3 { 0%, 100% { opacity: .4; } 30% { opacity: 1; } 80% { opacity: .6; } }
 @keyframes twinkle4 { 0%, 100% { opacity: .8; } 50% { opacity: .25; } }
+
+/* header area: no clipping box, so the cover glow can fade out naturally */
+.main-entityHeader-container.sfx-cover-glow, .main-entityHeader-container.sfx-cover-glow > div { overflow: visible !important; }
+.main-entityHeader-container.sfx-cover-glow::before { top: -30%; height: 150%; left: -5%; width: 75%; }
+/* Spotify darkens the bottom of every header with a gradient overlay; that drew a hard line under the cover glow */
+.main-entityHeader-container > div[style=""], .main-entityHeader-container > div:not([class*="main-entityHeader"]):empty { background-image: none !important; }
+.main-entityHeader-container > div:first-child:not(.main-entityHeader-contentWrapper) > div { background-image: none !important; }

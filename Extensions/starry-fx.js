@@ -315,7 +315,8 @@ document.addEventListener("click", e => {
   function dot(l, st, fresh) {
     const d = document.createElement("div");
     d.className = "sfx-gold" + (fresh ? " fresh" : "");
-    d.style.left = st.x + "%"; d.style.top = st.y + "%";
+    const x = st.x > 66 ? 8 + (st.x - 8) * 0.62 : st.x; // keep clear of the record/controls column
+    d.style.left = x + "%"; d.style.top = st.y + "%";
     d.style.setProperty("--s", st.s + "px");
     d.title = st.t || "";
     l.appendChild(d);
@@ -341,7 +342,7 @@ document.addEventListener("click", e => {
     if (window.sfxOn?.("gold") === false) return;
     sparks();
     const l = layer(); if (!l) return;
-    const st = { x: 8 + Math.random() * 84, y: 6 + Math.random() * 60, s: 3 + Math.random() * 2, t: Spicetify.Player.data?.item?.name };
+    const st = { x: 8 + Math.random() * 58, y: 6 + Math.random() * 60, s: 3 + Math.random() * 2, t: Spicetify.Player.data?.item?.name };
     const ex = st.x / 100 * innerWidth, ey = st.y / 100 * innerHeight;
     // streak comes in from the top-right, the same heading as the other shooting stars, and lands on the new star
     const s = document.createElement("div");
@@ -626,7 +627,8 @@ window.sfxEvery(() => {
     return names;
   }
   // five slots spread over the sky, kept clear of the player column on the right
-  const SLOTS = [[8, 10], [36, 6], [60, 14], [18, 58], [50, 66]];
+  // empty sky in the record column: above the record and below the up-next list, never behind page content
+  const SLOTS = [[74.5, 1.5], [87, 3], [74.5, 84], [87, 87], [80.5, 93]];
   async function draw() {
     const host = document.querySelector(".Root__top-container");
     if (!host || host.querySelector(":scope > .sfx-const")) return;
