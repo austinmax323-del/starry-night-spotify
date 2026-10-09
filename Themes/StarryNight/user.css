@@ -1189,3 +1189,7 @@ body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container, body.sfx-cinem
   white-space: normal !important; overflow: visible !important; text-overflow: clip !important; -webkit-mask-image: none !important; mask-image: none !important;
 }
 body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container { text-align: center; width: 720px !important; }
+
+/* Home: hide the big featured card and the "New release" card, leaving their space as open sky */
+.sfx-shelf > .sfx-feat { visibility: hidden !important; }
+section.sfx-newrel { visibility: hidden !important; }

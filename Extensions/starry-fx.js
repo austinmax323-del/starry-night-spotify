@@ -771,3 +771,10 @@ window.sfxEvery(() => {
     if ((e.key === "h" || e.key === "H") && !e.metaKey && !e.ctrlKey && !e.altKey) toggle();
   });
 })();
+
+// Home: tag the "New release from …" block so its card can be hidden (space kept)
+window.sfxEvery(() => {
+  const t = [...document.querySelectorAll('[data-testid="home-page"] p')].find(p => /^New release from/i.test(p.textContent));
+  const sec = t?.closest("section");
+  if (sec && !sec.classList.contains("sfx-newrel")) sec.classList.add("sfx-newrel");
+}, 1000);
