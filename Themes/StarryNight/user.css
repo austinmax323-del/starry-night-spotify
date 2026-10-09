@@ -1129,3 +1129,33 @@ body.sfx-off-glow .sfx-glow { display: none; }
 /* Spotify darkens the bottom of every header with a gradient overlay; that drew a hard line under the cover glow */
 .main-entityHeader-container > div[style=""], .main-entityHeader-container > div:not([class*="main-entityHeader"]):empty { background-image: none !important; }
 .main-entityHeader-container > div:first-child:not(.main-entityHeader-contentWrapper) > div { background-image: none !important; }
+
+/* ---------- 1. Gap under the play / shuffle row (Spotify pads it by 96px) ---------- */
+.main-view-container .main-actionBar-ActionBar { padding-bottom: 14px !important; }
+
+/* ---------- 3. Hover rows: soft glow instead of Spotify grey ---------- */
+.main-view-container .main-trackList-trackListRow:hover,
+.main-view-container .main-trackList-trackListRow:focus-within {
+  background: radial-gradient(ellipse 60% 140% at 20% 50%, rgba(var(--spice-rgb-button), .09), rgba(255,255,255,.025) 70%) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+}
+.main-view-container .main-trackList-trackListRow[aria-selected="true"],
+.main-view-container .main-trackList-trackListRow.main-trackList-selected { background: rgba(var(--spice-rgb-button), .12) !important; }
+
+/* ---------- 4. Playing row: glow + its cover becomes a tiny spinning record ---------- */
+.main-view-container .main-trackList-trackListRow.sfx-playing-row {
+  background: linear-gradient(90deg, rgba(var(--spice-rgb-button), .13), rgba(var(--spice-rgb-button), .02) 70%) !important;
+  box-shadow: inset 2px 0 0 rgba(var(--spice-rgb-button), .7), 0 0 30px rgba(var(--spice-rgb-button), .06);
+}
+.main-view-container .sfx-playing-row .main-trackList-rowSectionStart img {
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.18), 0 0 14px rgba(var(--spice-rgb-button), .45);
+  animation: spin 6s linear infinite; animation-play-state: paused;
+}
+body.sfx-is-playing .main-view-container .sfx-playing-row .main-trackList-rowSectionStart img { animation-play-state: running; }
+.main-view-container .sfx-playing-row .main-trackList-rowTitle, .main-view-container .sfx-playing-row [data-encore-id="text"]:first-child { color: #fff !important; }
+
+/* ---------- 5. Battery: drop the heaviest ambient layers while unplugged ---------- */
+body.sfx-battery .sfx-weather, body.sfx-battery .sfx-dust { display: none !important; }
+body.sfx-battery .starrynight-bg-container > div { animation: none !important; }
+body.sfx-away .shootingstar { animation-play-state: paused !important; }

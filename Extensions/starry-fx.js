@@ -716,3 +716,37 @@ window.sfxEvery(() => {
     if ((e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey && !e.altKey) make();
   });
 })();
+
+// ---------- Playing row + play state flag ----------
+window.sfxEvery(() => {
+  document.body.classList.toggle("sfx-is-playing", !!Spicetify.Player.isPlaying());
+  const eq = document.querySelector('.main-view-container .main-trackList-trackListRow img[src*="equaliser"], .main-view-container .main-trackList-trackListRow [class*="playingIcon"], .main-view-container .main-trackList-trackListRow svg[class*="playing"]');
+  const row = eq?.closest(".main-trackList-trackListRow")
+    // fallback: the row whose title text matches the current track and is shown in the accent colour
+    || [...document.querySelectorAll(".main-view-container .main-trackList-trackListRow")].find(r => {
+      const t = r.querySelector(".main-trackList-rowTitle, [data-encore-id='text']");
+      return t && t.textContent === Spicetify.Player.data?.item?.name && getComputedStyle(t).color !== getComputedStyle(r).color;
+    });
+  for (const r of document.querySelectorAll(".sfx-playing-row")) if (r !== row) r.classList.remove("sfx-playing-row");
+  if (row && !row.classList.contains("sfx-playing-row")) row.classList.add("sfx-playing-row");
+}, 700);
+
+// ---------- 5. Energy: freeze effects when Spotify isn't in front, lighter mode on battery ----------
+(function energy() {
+  const sync = () => {
+    const away = document.hidden || !document.hasFocus();
+    document.body.classList.toggle("sfx-away", away);
+    for (const a of document.getAnimations()) {
+      const n = a.animationName || "";
+      if (!/^(twinkle\d|sfx-|spin$)/.test(n)) continue;
+      if (away) a.pause(); else if (a.playState === "paused" && !(n === "spin" && !Spicetify.Player.isPlaying())) a.play();
+    }
+  };
+  window.addEventListener("blur", () => setTimeout(sync, 50));
+  window.addEventListener("focus", sync);
+  document.addEventListener("visibilitychange", sync);
+  navigator.getBattery?.().then(b => {
+    const set = () => document.body.classList.toggle("sfx-battery", !b.charging);
+    set(); b.addEventListener("chargingchange", set);
+  }).catch(() => {});
+})();
