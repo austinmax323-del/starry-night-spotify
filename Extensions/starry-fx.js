@@ -750,3 +750,11 @@ window.sfxEvery(() => {
     set(); b.addEventListener("chargingchange", set);
   }).catch(() => {});
 })();
+
+// mark player title/artist lines that overflow so only those get the fade
+window.sfxEvery(() => {
+  for (const el of document.querySelectorAll(".Root__now-playing-bar .main-trackInfo-name, .Root__now-playing-bar .main-trackInfo-artists")) {
+    const over = el.scrollWidth > el.clientWidth + 1;
+    if (el.classList.contains("sfx-overflow") !== over) el.classList.toggle("sfx-overflow", over);
+  }
+}, 800);
