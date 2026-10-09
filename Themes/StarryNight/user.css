@@ -1193,3 +1193,5 @@ body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container { text-align: c
 /* Home: hide the big featured card and the "New release" card, leaving their space as open sky */
 .sfx-shelf > .sfx-feat { visibility: hidden !important; }
 section.sfx-newrel { visibility: hidden !important; }
+/* the shelf beside the hidden new-release block: hide all its cards, keep the heading and the space */
+section.sfx-newrel-row [data-encore-id="card"], section.sfx-newrel-row .sfx-shelf > * { visibility: hidden !important; }

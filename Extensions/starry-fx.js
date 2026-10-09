@@ -777,4 +777,8 @@ window.sfxEvery(() => {
   const t = [...document.querySelectorAll('[data-testid="home-page"] p')].find(p => /^New release from/i.test(p.textContent));
   const sec = t?.closest("section");
   if (sec && !sec.classList.contains("sfx-newrel")) sec.classList.add("sfx-newrel");
+  // the shelf sharing that row (e.g. "It's New Music Friday!") loses its cards too; its space stays
+  const row = sec?.parentElement;
+  if (row) for (const sib of row.querySelectorAll(':scope > section[data-testid="component-shelf"], :scope > * > section[data-testid="component-shelf"]'))
+    if (!sib.classList.contains("sfx-newrel-row")) sib.classList.add("sfx-newrel-row");
 }, 1000);
