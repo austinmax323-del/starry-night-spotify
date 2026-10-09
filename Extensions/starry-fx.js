@@ -758,3 +758,16 @@ window.sfxEvery(() => {
     if (el.classList.contains("sfx-overflow") !== over) el.classList.toggle("sfx-overflow", over);
   }
 }, 800);
+
+// ---------- Clean recording mode: H toggles. Hides the dock, scrollbars, cursor-ish chrome and your name / avatar ----------
+(function cleanMode() {
+  const toggle = () => {
+    const on = document.body.classList.toggle("sfx-clean");
+    Spicetify.showNotification?.(on ? "Clean mode on (H to exit)" : "Clean mode off");
+  };
+  window.sfxClean = toggle;
+  document.addEventListener("keydown", e => {
+    if (e.target.closest?.("input, textarea, [contenteditable='true']")) return;
+    if ((e.key === "h" || e.key === "H") && !e.metaKey && !e.ctrlKey && !e.altKey) toggle();
+  });
+})();

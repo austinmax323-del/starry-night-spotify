@@ -49,6 +49,8 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Your five most-liked artists hang in the sky as constellations; the one playing lights up.
 - Queue opens as a floating glass panel; settings get glass sections.
 - Every effect can be switched off from the palette menu.
+- Clean recording mode (<kbd>H</kbd>): hides the dock, scrollbars and your name for footage.
+- Effects pause when Spotify is in the background; weather, dust and twinkle switch off on battery.
 
 ## Files
 

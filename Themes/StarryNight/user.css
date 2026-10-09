@@ -1171,3 +1171,21 @@ body.sfx-away .shootingstar { animation-play-state: paused !important; }
 /* fade only when the text is actually cut off */
 .Root__now-playing-bar .sfx-overflow { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
 .Root__now-playing-bar .main-trackInfo-name * { white-space: nowrap !important; }
+
+/* ---------- Clean recording mode (H) ---------- */
+body.sfx-clean .Root__globalNav { opacity: 0 !important; pointer-events: none !important; }
+body.sfx-clean .os-scrollbar, body.sfx-clean ::-webkit-scrollbar { display: none !important; width: 0 !important; }
+/* your name + avatar: playlist owner line, dock profile button */
+body.sfx-clean .main-entityHeader-metaData a[href^="/user/"],
+body.sfx-clean .main-entityHeader-metaData img,
+body.sfx-clean .main-entityHeader-metaData [data-testid="creator-link"],
+body.sfx-clean .main-entityHeader-metaData figure { display: none !important; }
+body.sfx-clean .Spicetify-notifications, body.sfx-clean [data-testid="toast"] { opacity: 0; }
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container { max-width: 760px !important; }
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-name, body.sfx-cinema .Root__now-playing-bar .main-trackInfo-artists { max-width: 720px !important; }
+/* cinema: long titles wrap onto two centred lines instead of being clipped */
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-name, body.sfx-cinema .Root__now-playing-bar .main-trackInfo-name *,
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container, body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container * {
+  white-space: normal !important; overflow: visible !important; text-overflow: clip !important; -webkit-mask-image: none !important; mask-image: none !important;
+}
+body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container { text-align: center; width: 720px !important; }
