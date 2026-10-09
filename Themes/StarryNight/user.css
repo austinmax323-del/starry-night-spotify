@@ -1142,17 +1142,12 @@ body.sfx-off-glow .sfx-glow { display: none; }
 .main-view-container .main-trackList-trackListRow[aria-selected="true"],
 .main-view-container .main-trackList-trackListRow.main-trackList-selected { background: rgba(var(--spice-rgb-button), .12) !important; }
 
-/* ---------- 4. Playing row: glow + its cover becomes a tiny spinning record ---------- */
+/* ---------- 4. Playing row: glow ---------- */
 .main-view-container .main-trackList-trackListRow.sfx-playing-row {
   background: linear-gradient(90deg, rgba(var(--spice-rgb-button), .13), rgba(var(--spice-rgb-button), .02) 70%) !important;
   box-shadow: inset 2px 0 0 rgba(var(--spice-rgb-button), .7) !important;
 }
-.main-view-container .sfx-playing-row .main-trackList-rowSectionStart img {
-  border-radius: 50% !important;
-  box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.18), 0 0 14px rgba(var(--spice-rgb-button), .45);
-  animation: spin 6s linear infinite; animation-play-state: paused;
-}
-body.sfx-is-playing .main-view-container .sfx-playing-row .main-trackList-rowSectionStart img { animation-play-state: running; }
+
 .main-view-container .sfx-playing-row .main-trackList-rowTitle, .main-view-container .sfx-playing-row [data-encore-id="text"]:first-child { color: #fff !important; }
 
 /* ---------- 5. Battery: drop the heaviest ambient layers while unplugged ---------- */
