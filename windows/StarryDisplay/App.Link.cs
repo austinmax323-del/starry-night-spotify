@@ -40,13 +40,16 @@ public partial class App : IDisplayHost
         _vm.Clock.Changed += (_, _) => PublishPlayback();
         ApplyThemeToViewModel();
         PublishDisplay();
-        if (_settings.LinkEnabled && !_demo) await SetLinkEnabledAsync(true);
+        if (_settings.LinkEnabled && !_demo) await SetLinkEnabledAsync(true, interactive: false);
     }
 
-    public async Task SetLinkEnabledAsync(bool enabled)
+    public Task SetLinkEnabledAsync(bool enabled) => SetLinkEnabledAsync(enabled, interactive: true);
+
+    /// <param name="interactive">True when the user just asked for it (may show one UAC prompt); false at startup.</param>
+    private async Task SetLinkEnabledAsync(bool enabled, bool interactive)
     {
         _settings.LinkEnabled = enabled;
-        if (enabled && !await Task.Run(LinkFirewall.RuleExists))
+        if (enabled && interactive && !await Task.Run(LinkFirewall.RuleExists))
         {
             // Listening on the LAN without a rule makes Windows show its broad "allow on public and
             // private networks?" prompt. Put the narrow rule in place first (one UAC prompt).
