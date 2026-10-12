@@ -61,10 +61,7 @@
                     <CheckBox x:Name="TopmostBox" Content="Always on top" Style="{StaticResource ToggleSwitch}" Margin="0,16,0,0" Click="OnChanged" />
                     <CheckBox x:Name="BackdropBox" Content="Artwork glow behind the card" Style="{StaticResource ToggleSwitch}" Margin="0,12,0,0" Click="OnChanged" />
 
-                    <TextBlock Text="Card opacity" Style="{StaticResource Label}" Margin="0,18,0,6" />
-                    <Slider x:Name="OpacitySlider" Style="{StaticResource FlatSlider}" Minimum="0.55" Maximum="1" ValueChanged="OnSliderChanged" />
-
-                    <TextBlock Text="Lyrics size" Style="{StaticResource Label}" Margin="0,14,0,6" />
+                    <TextBlock Text="Lyrics size" Style="{StaticResource Label}" Margin="0,18,0,6" />
                     <Slider x:Name="LyricsSlider" Style="{StaticResource FlatSlider}" Minimum="0.7" Maximum="1.6" ValueChanged="OnSliderChanged" />
                 </StackPanel>
             </Border>

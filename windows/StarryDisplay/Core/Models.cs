@@ -63,8 +63,6 @@ public sealed class AppSettings
     public bool AlwaysOnTop { get; set; } = true;
     /// <summary>1.0 = default lyric size; scales every composition's lyric type.</summary>
     public double LyricsScale { get; set; } = 1.0;
-    /// <summary>Opacity of the Stage card background (0.55–1).</summary>
-    public double BackgroundOpacity { get; set; } = 0.92;
     public bool ArtworkBackdrop { get; set; } = true;
     public bool StartWithWindows { get; set; }
 

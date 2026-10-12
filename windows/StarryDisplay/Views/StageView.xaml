@@ -5,7 +5,7 @@
     <Grid x:Name="Card">
         <!-- Background stack: night base, soft artwork glow, legibility veil, static stars, hairline. -->
         <Rectangle x:Name="BaseFill" Fill="{StaticResource NightBrush}" />
-        <Grid x:Name="BackdropLayer" Opacity="0.6">
+        <Grid x:Name="BackdropLayer" Opacity="0.58">
             <Image x:Name="BackA" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" Opacity="0" />
             <Image x:Name="BackB" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" Opacity="0" />
         </Grid>
@@ -19,7 +19,6 @@
             </Rectangle.Fill>
         </Rectangle>
         <Rectangle x:Name="Stars" Opacity="0.55" />
-        <Border x:Name="Hairline" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" CornerRadius="22" />
 
         <!-- Live content -->
         <Grid x:Name="LiveContent" Margin="28">

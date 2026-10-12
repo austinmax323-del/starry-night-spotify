@@ -14,7 +14,6 @@ namespace StarryDisplay.Views;
 /// </summary>
 public partial class StageView : UserControl, IComposition
 {
-    private const double CornerRadius = 22;
     /// <summary>Below this width the lyrics column is hidden and the card becomes a compact now-playing tile.</summary>
     private const double LyricsMinWidth = 700;
 
@@ -84,10 +83,7 @@ public partial class StageView : UserControl, IComposition
     {
         _settings = settings;
         _lyrics.FontScale = settings.LyricsScale;
-        BaseFill.Opacity = settings.BackgroundOpacity;
-        Veil.Opacity = 0.55 + 0.45 * settings.BackgroundOpacity;
         BackdropLayer.Visibility = settings.ArtworkBackdrop ? Visibility.Visible : Visibility.Collapsed;
-        BackdropLayer.Opacity = 0.62 * settings.BackgroundOpacity;
     }
 
     // ---- events -------------------------------------------------------------------------
@@ -148,7 +144,8 @@ public partial class StageView : UserControl, IComposition
     private void ApplyPlayGlyph()
     {
         if (_vm is null) return;
-        PlayGlyph.Text = _vm.IsPlaying ? "\uE768" : "\uE769";
+        // Only paused gets a glyph; a moving clock already says "playing".
+        PlayGlyph.Text = _vm.IsPlaying ? "" : "\uE769";
         Anim.To(ArtBox, OpacityProperty, _vm.State == DisplayState.Paused ? 0.72 : 1.0, 400);
     }
 
@@ -248,7 +245,9 @@ public partial class StageView : UserControl, IComposition
         if (_vm is null) return;
         var clock = _vm.Clock;
         var pos = clock.PositionMs;
-        ProgressScale.ScaleX = clock.DurationMs > 0 ? Math.Clamp(pos / (double)clock.DurationMs, 0, 1) : 0;
+        var fraction = clock.DurationMs > 0 ? Math.Clamp(pos / (double)clock.DurationMs, 0, 1) : 0;
+        // Redraw only when the fill moves at least one pixel.
+        if (Math.Abs(fraction - ProgressScale.ScaleX) * ProgressFill.ActualWidth >= 1 || fraction == 0) ProgressScale.ScaleX = fraction;
         var second = pos / 1000;
         if (second != _lastElapsedSecond)
         {
@@ -270,9 +269,6 @@ public partial class StageView : UserControl, IComposition
         var w = ActualWidth;
         var h = ActualHeight;
         if (w <= 0 || h <= 0) return;
-
-        Card.Clip = new RectangleGeometry(new Rect(0, 0, w, h), CornerRadius, CornerRadius);
-        Hairline.CornerRadius = new CornerRadius(CornerRadius);
 
         // Artwork is a square filling the card height, but never more than ~40% of the width.
         var pad = h < 260 ? 18 : 28;

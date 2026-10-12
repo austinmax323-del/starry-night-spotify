@@ -5,7 +5,6 @@
     <Grid x:Name="Card">
         <Rectangle Fill="{StaticResource NightBrush}" Opacity="0.96" />
         <Rectangle x:Name="Stars" Opacity="0.6" />
-        <Border x:Name="Hairline" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" CornerRadius="22" />
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="34,28" MaxWidth="560" HorizontalAlignment="Left">
                 <TextBlock Text="Starry Display" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="28" Foreground="{StaticResource InkBrush}" />

@@ -17,7 +17,6 @@ public partial class SetupView : UserControl
         InitializeComponent();
         Stars.Fill = Anim.CreateStarField(seed: 11);
         RedirectText.Text = SpotifyService.RedirectUri;
-        SizeChanged += (_, _) => Card.Clip = new RectangleGeometry(new Rect(RenderSize), 22, 22);
     }
 
     public string ClientId

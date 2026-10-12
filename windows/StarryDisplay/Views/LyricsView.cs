@@ -128,8 +128,11 @@ public sealed class LyricsView : Grid
         _loadingTimer.Stop();
         var hadContent = _sheet.Opacity > 0.01 || _message.Opacity > 0.01;
 
+        Services.Log.Trace(() => $"Lyrics.Show v{version} kind={doc?.Kind} lines={doc?.Lines.Count} loading={loading} visible={IsVisible} size={ActualWidth:0}x{ActualHeight:0} hadContent={hadContent}");
+
         void Apply()
         {
+            Services.Log.Trace(() => $"Lyrics.Apply v{version} current=v{_version}");
             if (version != _version) return; // superseded by a newer Show()
             Build(doc);
             if (doc is null)
@@ -254,6 +257,7 @@ public sealed class LyricsView : Grid
                 _tops[i] = _blocks[i].TranslatePoint(new Point(0, 0), _sheet).Y;
                 _heights[i] = _blocks[i].ActualHeight;
             }
+            Services.Log.Trace(() => $"Lyrics.Remeasure n={_blocks.Count} w={ActualWidth:0} h={ActualHeight:0} sheetH={_sheet.ActualHeight:0} top0={_tops[0]:0} h0={_heights[0]:0} sheetOpacity={_sheet.Opacity:0.00} pos={Position()}");
             if (_kind == LyricsKind.Synced)
             {
                 var keep = _active;

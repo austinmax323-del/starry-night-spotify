@@ -31,7 +31,6 @@ public partial class SettingsWindow : Window
         TopmostBox.IsChecked = settings.AlwaysOnTop;
         BackdropBox.IsChecked = settings.ArtworkBackdrop;
         AutostartBox.IsChecked = settings.StartWithWindows;
-        OpacitySlider.Value = settings.BackgroundOpacity;
         LyricsSlider.Value = settings.LyricsScale;
         VersionText.Text = $"Starry Display {typeof(App).Assembly.GetName().Version?.ToString(3)}";
         RefreshAccount();
@@ -84,7 +83,6 @@ public partial class SettingsWindow : Window
         _settings.AlwaysOnTop = TopmostBox.IsChecked == true;
         _settings.ArtworkBackdrop = BackdropBox.IsChecked == true;
         _settings.StartWithWindows = AutostartBox.IsChecked == true;
-        _settings.BackgroundOpacity = Math.Round(OpacitySlider.Value, 2);
         _settings.LyricsScale = Math.Round(LyricsSlider.Value, 2);
         SettingsChanged?.Invoke();
     }

@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Shell;
 using StarryDisplay.Core;
 using StarryDisplay.Services;
 using StarryDisplay.Views;
@@ -12,9 +13,13 @@ using StarryDisplay.Views;
 namespace StarryDisplay;
 
 /// <summary>
-/// The display window: borderless, transparent, resizable (8 px invisible edges), draggable anywhere,
-/// optionally always-on-top and click-through. Hosts one composition at a time; switching swaps
-/// content inside the same window (no window recreation). Commands go up to <see cref="App"/>.
+/// The display window: borderless, resizable (8 px invisible edges), draggable anywhere,
+/// optionally always-on-top and click-through. Two flavours:
+/// - opaque (Stage card): a normal DWM window — Windows draws the rounded corners and shadow, and
+///   animation is GPU-composited with no CPU copy. This is what keeps the card cheap to leave open.
+/// - transparent (Lyrics strip): a per-pixel-alpha layered window, needed to float text on the desktop.
+///   WPF copies layered frames back from the GPU, so only the small strip uses it.
+/// Track changes never recreate the window; only switching between the two flavours does.
 /// </summary>
 public partial class MainWindow : Window
 {
@@ -23,9 +28,20 @@ public partial class MainWindow : Window
     private bool _locked;
     private bool _allowClose;
 
-    public MainWindow()
+    public MainWindow(bool transparent)
     {
         InitializeComponent();
+        IsTransparent = transparent;
+        AllowsTransparency = transparent;
+        Background = transparent ? Brushes.Transparent : (Brush)FindResource("NightBrush");
+        WindowChrome.SetWindowChrome(this, new WindowChrome
+        {
+            CaptionHeight = 0,
+            ResizeBorderThickness = new Thickness(8),
+            GlassFrameThickness = new Thickness(0),
+            CornerRadius = new CornerRadius(0),
+            UseAeroCaptionButtons = false
+        });
         SetupHost.Content = Setup;
         MouseEnter += (_, _) => UpdateToolbar();
         MouseLeave += (_, _) => UpdateToolbar();
@@ -35,6 +51,7 @@ public partial class MainWindow : Window
     public event Action<string>? CommandRequested;
 
     public SetupView Setup { get; } = new();
+    public bool IsTransparent { get; }
     public IComposition? Current => _current;
     public bool IsLocked => _locked;
 
@@ -92,6 +109,7 @@ public partial class MainWindow : Window
     public void CloseForReal()
     {
         _allowClose = true;
+        _current?.Detach();
         Close();
     }
 
@@ -101,6 +119,7 @@ public partial class MainWindow : Window
         var helper = new WindowInteropHelper(this);
         HwndSource.FromHwnd(helper.Handle)?.AddHook(WndProc);
         if (!NativeMethods.RegisterToggleHotKey(helper)) Log.Write("Ctrl+Alt+L is taken by another app; use the tray menu for click-through.");
+        if (!IsTransparent) NativeMethods.UseRoundedCorners(helper.Handle);
         NativeMethods.SetClickThrough(helper.Handle, _locked);
     }
 

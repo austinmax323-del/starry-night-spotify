@@ -3,18 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Starry Display"
         Width="1000" Height="400" MinWidth="360" MinHeight="110"
-        AllowsTransparency="True"
-        Background="Transparent"
         WindowStyle="None"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Ideal">
-    <WindowChrome.WindowChrome>
-        <!-- No caption, no glass: just invisible resize borders on a borderless transparent window. -->
-        <WindowChrome CaptionHeight="0" ResizeBorderThickness="8" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
-    </WindowChrome.WindowChrome>
-
     <Grid x:Name="Root" Background="Transparent" MouseLeftButtonDown="OnRootMouseDown">
         <ContentControl x:Name="Host" Focusable="False" />
         <ContentControl x:Name="SetupHost" Focusable="False" Visibility="Collapsed" />

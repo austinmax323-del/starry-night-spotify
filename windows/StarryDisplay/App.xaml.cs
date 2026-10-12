@@ -24,7 +24,7 @@ public partial class App : System.Windows.Application
     private SpotifyService _spotify = null!;
     private PlaybackController _controller = null!;
     private NowPlayingViewModel _vm = null!;
-    private MainWindow _window = null!;
+    private MainWindow? _window;
     private TrayIcon _tray = null!;
     private SettingsWindow? _settingsWindow;
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1.5) };
@@ -62,18 +62,6 @@ public partial class App : System.Windows.Application
         var lyrics = new CachedLyricsProvider(new LrclibLyricsProvider(), _store.DataDirectory);
         _controller = new PlaybackController(_spotify, lyrics, new ArtworkService(), _vm);
 
-        _window = new MainWindow();
-        _window.CommandRequested += OnCommand;
-        _window.Setup.ClientId = _settings.ClientId;
-        _window.Setup.ConnectRequested += ConnectAsync;
-        _window.IsVisibleChanged += (_, _) =>
-        {
-            if (_window.IsVisible) _controller.Resume(PlaybackController.PauseReason.Hidden);
-            else _controller.Pause(PlaybackController.PauseReason.Hidden);
-            UpdateTray();
-        };
-        _window.LocationChanged += (_, _) => QueueSave();
-        _window.SizeChanged += (_, _) => QueueSave();
         _saveTimer.Tick += async (_, _) => { _saveTimer.Stop(); await SaveAsync(); };
 
         _vm.StateChanged += (_, _) => OnStateChanged();
@@ -87,11 +75,9 @@ public partial class App : System.Windows.Application
         SessionEnding += async (_, _) => await SaveAsync();
 
         _connected = await _spotify.HasTokenAsync();
-        ShowLayout(_settings.Layout);
-        _window.ApplySettings(_settings);
         if (_connected) _controller.SignedIn();
         else _controller.SignedOut("");
-        _window.Show();
+        ShowLayout(_settings.Layout);
         UpdateTray();
     }
 
@@ -114,14 +100,14 @@ public partial class App : System.Windows.Application
         switch (command)
         {
             case "tray-click":
-                if (_window.IsLocked) SetLocked(false);
+                if (_window!.IsLocked) SetLocked(false);
                 else ToggleWindow();
                 break;
             case "toggle":
                 ToggleWindow();
                 break;
             case "hide":
-                _window.Hide();
+                _window!.Hide();
                 break;
             case "layout":
                 await SetLayoutAsync(_settings.Layout == Layouts.Strip ? Layouts.Stage : Layouts.Strip);
@@ -134,11 +120,11 @@ public partial class App : System.Windows.Application
                 break;
             case "topmost":
                 _settings.AlwaysOnTop = !_settings.AlwaysOnTop;
-                _window.ApplySettings(_settings);
+                _window!.ApplySettings(_settings);
                 await SaveAsync();
                 break;
             case "lock":
-                SetLocked(!_window.IsLocked);
+                SetLocked(!_window!.IsLocked);
                 break;
             case "pause":
                 if (_controller.IsPausedByUser) _controller.Resume(PlaybackController.PauseReason.User);
@@ -157,17 +143,17 @@ public partial class App : System.Windows.Application
 
     private void ToggleWindow()
     {
-        if (_window.IsVisible) _window.Hide();
+        if (_window!.IsVisible) _window!.Hide();
         else
         {
-            _window.Show();
-            _window.Activate();
+            _window!.Show();
+            _window!.Activate();
         }
     }
 
     private void SetLocked(bool locked)
     {
-        _window.SetLocked(locked);
+        _window!.SetLocked(locked);
         Log.Write(locked ? "Click-through on." : "Click-through off.");
         UpdateTray();
     }
@@ -185,9 +171,46 @@ public partial class App : System.Windows.Application
     {
         // Sign-in needs room: show the stage card while signed out, whatever layout is chosen.
         var effective = !_connected ? Layouts.Stage : layout;
+        var transparent = effective == Layouts.Strip;
         var bounds = effective == Layouts.Strip ? _settings.StripBounds : _settings.StageBounds;
-        _window.ShowComposition(effective, _vm, _settings, bounds);
-        _window.SetSetupVisible(!_connected);
+
+        if (_window is null || _window!.IsTransparent != transparent)
+        {
+            // The strip needs a per-pixel-transparent window, the card a normal one; WPF can't switch
+            // a live window between the two, so this (and only this) swaps the window.
+            var old = _window;
+            var visible = old?.IsVisible ?? true;
+            var locked = old?.IsLocked ?? false;
+            _window = CreateWindow(transparent);
+            _window!.ShowComposition(effective, _vm, _settings, bounds);
+            _window!.ApplySettings(_settings);
+            _window!.SetSetupVisible(!_connected);
+            if (visible) _window!.Show();
+            _window!.SetLocked(locked);
+            old?.CloseForReal();
+            return;
+        }
+
+        _window!.ShowComposition(effective, _vm, _settings, bounds);
+        _window!.SetSetupVisible(!_connected);
+    }
+
+    private MainWindow CreateWindow(bool transparent)
+    {
+        var window = new MainWindow(transparent);
+        window.CommandRequested += OnCommand;
+        window.Setup.ClientId = _settings.ClientId;
+        window.Setup.ConnectRequested += ConnectAsync;
+        window.IsVisibleChanged += (_, _) =>
+        {
+            if (!ReferenceEquals(window, _window)) return; // a window being replaced
+            if (window.IsVisible) _controller.Resume(PlaybackController.PauseReason.Hidden);
+            else _controller.Pause(PlaybackController.PauseReason.Hidden);
+            UpdateTray();
+        };
+        window.LocationChanged += (_, _) => QueueSave();
+        window.SizeChanged += (_, _) => QueueSave();
+        return window;
     }
 
     private void OnStateChanged()
@@ -196,7 +219,7 @@ public partial class App : System.Windows.Application
         if (connected != _connected)
         {
             _connected = connected;
-            if (!connected) _window.Setup.SetStatus(_vm.StatusDetail);
+            if (!connected) _window!.Setup.SetStatus(_vm.StatusDetail);
             ShowLayout(_settings.Layout);
             _settingsWindow?.RefreshAccount();
         }
@@ -224,12 +247,12 @@ public partial class App : System.Windows.Application
         _settingsWindow = new SettingsWindow(_settings, () => _connected, _store.DataDirectory);
         _settingsWindow.SettingsChanged += async () =>
         {
-            if (_window.Current?.Id != (_connected ? _settings.Layout : Layouts.Stage))
+            if (_window!.Current?.Id != (_connected ? _settings.Layout : Layouts.Stage))
             {
-                RememberBounds(_window.Current?.Id);
+                RememberBounds(_window!.Current?.Id);
                 ShowLayout(_settings.Layout);
             }
-            _window.ApplySettings(_settings);
+            _window!.ApplySettings(_settings);
             Autostart.Apply(_settings.StartWithWindows);
             UpdateTray();
             await SaveAsync();
@@ -241,8 +264,8 @@ public partial class App : System.Windows.Application
                 _spotify.Disconnect();
                 _controller.SignedOut("Signed out. Paste a Client ID to connect again.");
             }
-            _window.Show();
-            _window.Activate();
+            _window!.Show();
+            _window!.Activate();
             _settingsWindow?.RefreshAccount();
         };
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
@@ -254,7 +277,7 @@ public partial class App : System.Windows.Application
         await SaveAsync();
         _tray.Dispose();
         _settingsWindow?.Close();
-        _window.CloseForReal();
+        _window!.CloseForReal();
         Shutdown();
     }
 
@@ -278,17 +301,17 @@ public partial class App : System.Windows.Application
 
     private void QueueSave()
     {
-        if (!_window.IsLoaded) return;
+        if (!_window!.IsLoaded) return;
         _saveTimer.Stop();
         _saveTimer.Start();
     }
 
     private void RememberBounds(string? layoutId = null)
     {
-        if (_window.Current is null || !_window.IsLoaded) return;
-        var id = layoutId ?? _window.Current.Id;
-        if (id == Layouts.Strip) _settings.StripBounds = _window.Bounds;
-        else _settings.StageBounds = _window.Bounds;
+        if (_window!.Current is null || !_window!.IsLoaded) return;
+        var id = layoutId ?? _window!.Current.Id;
+        if (id == Layouts.Strip) _settings.StripBounds = _window!.Bounds;
+        else _settings.StageBounds = _window!.Bounds;
     }
 
     private async Task SaveAsync()
@@ -305,7 +328,7 @@ public partial class App : System.Windows.Application
     }
 
     private void UpdateTray() =>
-        _tray?.Update(_window.IsVisible, _settings.Layout, _settings.AlwaysOnTop, _window.IsLocked, _controller.IsPausedByUser);
+        _tray?.Update(_window!.IsVisible, _settings.Layout, _settings.AlwaysOnTop, _window!.IsLocked, _controller.IsPausedByUser);
 
     private void UpdateTooltip()
     {

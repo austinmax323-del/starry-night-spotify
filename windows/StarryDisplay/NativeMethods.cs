@@ -52,6 +52,13 @@ internal static class NativeMethods
         SetWindowLongPtr64(hwnd, GwlExStyle, new IntPtr(style));
     }
 
+    /// <summary>Windows 11 rounded corners + DWM shadow for a borderless opaque window.</summary>
+    public static void UseRoundedCorners(IntPtr hwnd)
+    {
+        var round = 2; // DWMWCP_ROUND
+        DwmSetWindowAttribute(hwnd, 33 /* DWMWA_WINDOW_CORNER_PREFERENCE */, ref round, sizeof(int));
+    }
+
     /// <summary>Dark title bar + Mica backdrop (Windows 11 22H2+). Returns false when Mica isn't available.</summary>
     public static bool TryApplyMica(IntPtr hwnd)
     {

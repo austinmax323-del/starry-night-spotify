@@ -13,6 +13,14 @@ public static class Log
 
     public static string FilePath => Path.Combine(LogDirectory, "app.log");
 
+    /// <summary>Verbose tracing, on when a file named <c>diag.flag</c> exists in the data folder.</summary>
+    public static bool Verbose { get; } = File.Exists(Path.Combine(LogDirectory, "diag.flag"));
+
+    public static void Trace(Func<string> message)
+    {
+        if (Verbose) Write("[trace] " + message());
+    }
+
     public static void Write(string message, Exception? ex = null)
     {
         try
