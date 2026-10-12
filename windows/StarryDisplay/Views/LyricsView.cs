@@ -30,11 +30,13 @@ public sealed class LyricsView : Grid
 
     private readonly StackPanel _sheet = new() { VerticalAlignment = VerticalAlignment.Top };
     /// <summary>
-    /// Clips the scrolling sheet. Deliberately no OpacityMask edge fade: WPF maps a mask against the
-    /// *unclipped* content bounds, which move as the sheet scrolls, so the fade drifts and eventually
-    /// hides the lyrics. Edges are softened instead by dimming lines with distance from the current one.
+    /// Hosts the scrolling sheet. Must be a Canvas: a Grid/Border would arrange the (tall) sheet into a
+    /// viewport-sized slot and WPF's layout clip would then hide every line below the first screenful,
+    /// moving with the scroll. Canvas measures children at their full size and never layout-clips.
+    /// Also deliberately no OpacityMask edge fade (WPF maps masks against unclipped content bounds,
+    /// which shift as the sheet scrolls); edges are softened by dimming lines with distance instead.
     /// </summary>
-    private readonly Grid _viewport = new() { ClipToBounds = true, Background = Brushes.Transparent };
+    private readonly Canvas _viewport = new() { ClipToBounds = true, Background = Brushes.Transparent };
     private readonly TranslateTransform _scroll = new();
     private readonly TextBlock _message = new()
     {
