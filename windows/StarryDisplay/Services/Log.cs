@@ -8,7 +8,10 @@ public static class Log
     private static readonly object Gate = new();
     private const long MaxBytes = 512 * 1024;
 
-    public static string FilePath => Path.Combine(SettingsStore.DefaultDirectory, "app.log");
+    private static readonly string LogDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StarryDisplay");
+
+    public static string FilePath => Path.Combine(LogDirectory, "app.log");
 
     public static void Write(string message, Exception? ex = null)
     {
@@ -16,7 +19,7 @@ public static class Log
         {
             lock (Gate)
             {
-                Directory.CreateDirectory(SettingsStore.DefaultDirectory);
+                Directory.CreateDirectory(LogDirectory);
                 var info = new FileInfo(FilePath);
                 if (info.Exists && info.Length > MaxBytes) File.Move(FilePath, FilePath + ".1", overwrite: true);
                 var line = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff} {message}";

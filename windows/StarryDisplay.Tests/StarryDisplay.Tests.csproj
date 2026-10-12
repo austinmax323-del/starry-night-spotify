@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tests the UI-free core by linking its source files, so they run on any OS (and in CI) without WPF. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\StarryDisplay\Core\Models.cs" Link="Linked\Models.cs" />
+    <Compile Include="..\StarryDisplay\Core\PlaybackClock.cs" Link="Linked\PlaybackClock.cs" />
+    <Compile Include="..\StarryDisplay\Core\PollPolicy.cs" Link="Linked\PollPolicy.cs" />
+    <Compile Include="..\StarryDisplay\Core\SpotifyPlayerParser.cs" Link="Linked\SpotifyPlayerParser.cs" />
+    <Compile Include="..\StarryDisplay\Lyrics\ILyricsProvider.cs" Link="Linked\ILyricsProvider.cs" />
+    <Compile Include="..\StarryDisplay\Lyrics\LrcParser.cs" Link="Linked\LrcParser.cs" />
+    <Compile Include="..\StarryDisplay\Lyrics\LrclibLyricsProvider.cs" Link="Linked\LrclibLyricsProvider.cs" />
+    <Compile Include="..\StarryDisplay\Services\Log.cs" Link="Linked\Log.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+</Project>

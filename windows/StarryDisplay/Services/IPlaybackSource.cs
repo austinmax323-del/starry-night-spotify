@@ -1,4 +1,4 @@
-using StarryDisplay.Models;
+using StarryDisplay.Core;
 
 namespace StarryDisplay.Services;
 
@@ -10,7 +10,9 @@ namespace StarryDisplay.Services;
 /// </summary>
 public interface IPlaybackSource
 {
-    /// <returns>The current track, or null when nothing is playing.</returns>
+    /// <returns>The current playback; <see cref="PlaybackSnapshot.None"/> when no device is active.</returns>
     /// <exception cref="RateLimitedException">The source asked us to back off.</exception>
-    Task<TrackInfo?> GetPlaybackAsync(CancellationToken cancellationToken = default);
+    /// <exception cref="AuthRequiredException">There's no usable sign-in.</exception>
+    /// <exception cref="System.Net.Http.HttpRequestException">Network failure (treated as offline).</exception>
+    Task<PlaybackSnapshot> GetPlaybackAsync(CancellationToken cancellationToken = default);
 }

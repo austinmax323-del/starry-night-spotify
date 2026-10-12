@@ -2,7 +2,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using StarryDisplay.Models;
+using StarryDisplay.Core;
 
 namespace StarryDisplay.Services;
 

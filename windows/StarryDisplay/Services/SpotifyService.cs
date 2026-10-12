@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using StarryDisplay.Models;
+using StarryDisplay.Core;
 
 namespace StarryDisplay.Services;
 
@@ -108,8 +108,11 @@ public sealed class SpotifyService : IPlaybackSource
 
             if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(returnedState ?? ""), Encoding.ASCII.GetBytes(state)))
             {
-                await WriteBrowserResponse(context, 400, "Sign-in response did not match this request. Try again from the app.");
-                throw new InvalidOperationException("Spotify sign-in state mismatch.");
+                // Stale or forged callback (e.g. a refreshed tab from an earlier attempt). Reject it,
+                // but keep waiting for the genuine one instead of aborting the sign-in in progress.
+                Log.Write("Ignored a sign-in callback with a non-matching state.");
+                await WriteBrowserResponse(context, 400, "This sign-in link is out of date. Use the Spotify tab opened most recently, or click Connect again.");
+                continue;
             }
 
             if (!string.IsNullOrWhiteSpace(error) || string.IsNullOrWhiteSpace(code))
@@ -131,23 +134,30 @@ public sealed class SpotifyService : IPlaybackSource
         Log.Write("Spotify disconnected by user.");
     }
 
-    public async Task<TrackInfo?> GetPlaybackAsync(CancellationToken cancellationToken = default)
+    public async Task<PlaybackSnapshot> GetPlaybackAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await SendApiAsync("/me/player?additional_types=track", forceRefresh: false, cancellationToken);
-        if (response is null) return null;
+        using var response = await SendApiAsync("/me/player?additional_types=track,episode", forceRefresh: false, cancellationToken)
+            ?? throw new AuthRequiredException("Connect Spotify to start.");
 
-        if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound) return null;
+        // 204: no active device (Spotify closed everywhere, or the phone went to sleep long enough to drop out).
+        if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound) return PlaybackSnapshot.None;
         if (response.StatusCode == HttpStatusCode.TooManyRequests)
         {
             var retry = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(30);
             Log.Write($"Spotify 429; backing off {retry.TotalSeconds:0}s.");
             throw new RateLimitedException(retry);
         }
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            // Dev-mode apps answer 403 when the signed-in user isn't on the app's user list
+            // (or the owner's Premium lapsed). Signing in again won't help; say what to check.
+            throw new AuthRequiredException("Spotify refused access (403). Check that this account is added under User Management in your Spotify developer app.");
+        }
 
         response.EnsureSuccessStatusCode();
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        return NormalizeTrack(doc.RootElement);
+        return SpotifyPlayerParser.Parse(doc.RootElement);
     }
 
     private async Task<HttpResponseMessage?> SendApiAsync(string path, bool forceRefresh, CancellationToken ct)
@@ -250,42 +260,6 @@ public sealed class SpotifyService : IPlaybackSource
         };
         await _store.WriteSecretAsync(TokenFile, token);
         return token;
-    }
-
-    private static TrackInfo? NormalizeTrack(JsonElement player)
-    {
-        if (!player.TryGetProperty("item", out var item) || item.ValueKind == JsonValueKind.Null) return null;
-        if (!item.TryGetProperty("type", out var type) || type.GetString() != "track") return null;
-
-        var artists = item.GetProperty("artists").EnumerateArray()
-            .Select(artist => artist.GetProperty("name").GetString() ?? "")
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .ToList();
-
-        string? deviceName = null;
-        if (player.TryGetProperty("device", out var device) && device.ValueKind == JsonValueKind.Object &&
-            device.TryGetProperty("name", out var dn)) deviceName = dn.GetString();
-
-        string? artUrl = null;
-        var album = item.GetProperty("album");
-        if (album.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array)
-        {
-            artUrl = images.EnumerateArray()
-                .Select(i => i.TryGetProperty("url", out var u) ? u.GetString() : null)
-                .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u));
-        }
-
-        return new TrackInfo(
-            item.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "",
-            item.GetProperty("name").GetString() ?? "",
-            string.Join(", ", artists),
-            artists.FirstOrDefault() ?? "",
-            album.GetProperty("name").GetString() ?? "",
-            item.GetProperty("duration_ms").GetInt32(),
-            player.TryGetProperty("progress_ms", out var progress) && progress.ValueKind == JsonValueKind.Number ? progress.GetInt32() : 0,
-            player.TryGetProperty("is_playing", out var playing) && playing.ValueKind == JsonValueKind.True,
-            deviceName,
-            artUrl);
     }
 
     private static string RandomString(int length)

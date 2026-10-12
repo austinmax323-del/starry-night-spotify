@@ -1,18 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <!-- .NET 10 is the current LTS (supported to Nov 2028); 8 and 9 both reach end of support in Nov 2026. -->
+    <!-- .NET 10 is the current LTS (supported to Nov 2028). -->
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- WinForms only for the tray NotifyIcon. -->
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>StarryDisplay</RootNamespace>
     <AssemblyName>StarryDisplay</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>Starry Display</Product>
+    <!-- A light, long-running UI app: workstation GC without the background GC thread. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Keep WinForms/System.Drawing out of global usings so WPF types (Color, Image, Application…) stay unambiguous. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
