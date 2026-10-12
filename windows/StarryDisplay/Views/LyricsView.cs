@@ -33,8 +33,8 @@ public sealed class LyricsView : Grid
     /// Hosts the scrolling sheet. Must be a Canvas: a Grid/Border would arrange the (tall) sheet into a
     /// viewport-sized slot and WPF's layout clip would then hide every line below the first screenful,
     /// moving with the scroll. Canvas measures children at their full size and never layout-clips.
-    /// Also deliberately no OpacityMask edge fade (WPF maps masks against unclipped content bounds,
-    /// which shift as the sheet scrolls); edges are softened by dimming lines with distance instead.
+    /// The soft top/bottom edge fade is an OpacityMask on the outer control in viewport-absolute
+    /// coordinates, so it stays put while the sheet scrolls underneath it.
     /// </summary>
     private readonly Canvas _viewport = new() { ClipToBounds = true, Background = Brushes.Transparent };
     private readonly TranslateTransform _scroll = new();
@@ -76,7 +76,11 @@ public sealed class LyricsView : Grid
 
         _lineTimer.Tick += (_, _) => Resync(animate: true);
         _loadingTimer.Tick += (_, _) => { _loadingTimer.Stop(); ShowMessage("Finding lyrics…"); };
-        SizeChanged += (_, _) => Remeasure(jump: true);
+        SizeChanged += (_, _) =>
+        {
+            OpacityMask = Layout == LyricsLayout.Strip ? null : EdgeFade(ActualHeight, 0.16, 0.86);
+            Remeasure(jump: true);
+        };
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible) { Remeasure(jump: true); }
@@ -377,5 +381,21 @@ public sealed class LyricsView : Grid
         var min = Math.Min(0, ActualHeight * 0.85 - content);
         _manualOffset = Math.Clamp(offset, min, ActualHeight * 0.1);
         Anim.To(_scroll, TranslateTransform.YProperty, _manualOffset + ActualHeight * 0.1, 260);
+    }
+
+    private static Brush EdgeFade(double height, double top, double bottom)
+    {
+        var b = new LinearGradientBrush
+        {
+            MappingMode = BrushMappingMode.Absolute,
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0, Math.Max(1, height))
+        };
+        b.GradientStops.Add(new GradientStop(Colors.Transparent, 0));
+        b.GradientStops.Add(new GradientStop(Colors.Black, top));
+        b.GradientStops.Add(new GradientStop(Colors.Black, bottom));
+        b.GradientStops.Add(new GradientStop(Colors.Transparent, 1));
+        b.Freeze();
+        return b;
     }
 }
