@@ -213,9 +213,14 @@ def cmd_pair(args):
 
 def cmd_unpair(_args):
     cfg = load_config()
+    try:
+        request(cfg, "DELETE", "/v1/pairing")
+        where = "on this Mac and on the PC"
+    except StarryError as e:
+        where = f"on this Mac (couldn't reach the PC: {e}; remove it there with Settings > Mac link > Forget)"
     delete_key(cfg["keyId"])
     CONFIG_FILE.unlink()
-    say("Forgot the pairing on this Mac. (Remove it on the PC too: Settings > Mac link > Forget.)")
+    say(f"Unpaired {where}.")
 
 
 # ---- display commands ---------------------------------------------------------------------

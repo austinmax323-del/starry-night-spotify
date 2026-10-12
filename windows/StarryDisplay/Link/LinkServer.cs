@@ -376,6 +376,16 @@ public sealed class LinkServer : IAsyncDisposable
 
         app.MapGet("/v1/events", Events);
 
+        // A paired device can revoke its own key (used by `starry unpair`).
+        app.MapDelete("/v1/pairing", async ctx =>
+        {
+            var keyId = ctx.Request.Headers["X-Starry-Key"].ToString();
+            await _keys.RemoveAsync(keyId);
+            ctx.Response.StatusCode = 204;
+            Record(ctx, 204, $"device {keyId} unpaired itself");
+            StatusChanged?.Invoke();
+        });
+
         app.MapPost("/v1/pair/start", PairStart);
         app.MapPost("/v1/pair/finish", PairFinish);
 

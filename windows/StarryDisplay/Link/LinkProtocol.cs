@@ -40,7 +40,8 @@ public static partial class LinkProtocol
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = false
+        WriteIndented = false,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping // readable quotes in curl output; never rendered as HTML
     };
 
     [GeneratedRegex("^#?[0-9a-fA-F]{6}$")]
