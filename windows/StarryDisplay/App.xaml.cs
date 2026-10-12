@@ -29,10 +29,13 @@ public partial class App : System.Windows.Application
     private SettingsWindow? _settingsWindow;
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1.5) };
     private bool _connected;
+    private bool _demo;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
-        _singleInstance = new Mutex(initiallyOwned: true, @"Local\StarryDisplay.SingleInstance", out var isFirst);
+        // --demo runs as its own instance so it can sit beside the real display.
+        var demoArg = e.Args.Contains("--demo", StringComparer.OrdinalIgnoreCase);
+        _singleInstance = new Mutex(initiallyOwned: true, demoArg ? @"Local\StarryDisplay.Demo" : @"Local\StarryDisplay.SingleInstance", out var isFirst);
         if (!isFirst)
         {
             Log.Write("Second instance started; exiting.");
@@ -59,8 +62,11 @@ public partial class App : System.Windows.Application
         _settings = await _store.ReadSettingsAsync();
         _spotify = new SpotifyService(_store);
         _vm = new NowPlayingViewModel();
-        var lyrics = new CachedLyricsProvider(new LrclibLyricsProvider(), _store.DataDirectory);
-        _controller = new PlaybackController(_spotify, lyrics, new ArtworkService(), _vm);
+        _demo = e.Args.Contains("--demo", StringComparer.OrdinalIgnoreCase);
+        IPlaybackSource source = _demo ? new DemoPlaybackSource() : _spotify;
+        ILyricsProvider lyrics = _demo ? new DemoLyricsProvider() : new CachedLyricsProvider(new LrclibLyricsProvider(), _store.DataDirectory);
+        _controller = new PlaybackController(source, lyrics, new ArtworkService(), _vm);
+        if (_demo) Log.Write("Demo mode: scripted playback, no Spotify calls.");
 
         _saveTimer.Tick += async (_, _) => { _saveTimer.Stop(); await SaveAsync(); };
 
@@ -74,7 +80,7 @@ public partial class App : System.Windows.Application
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
         SessionEnding += async (_, _) => await SaveAsync();
 
-        _connected = await _spotify.HasTokenAsync();
+        _connected = _demo || await _spotify.HasTokenAsync();
         if (_connected) _controller.SignedIn();
         else _controller.SignedOut("");
         ShowLayout(_settings.Layout);
@@ -316,6 +322,7 @@ public partial class App : System.Windows.Application
 
     private async Task SaveAsync()
     {
+        if (_demo) return; // the demo never touches the real settings
         try
         {
             RememberBounds();

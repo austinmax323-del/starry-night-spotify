@@ -51,8 +51,9 @@ public sealed class ArtworkService
 
         try
         {
-            var bytes = await Http.GetByteArrayAsync(url, ct);
-            var art = await Task.Run(() => Decode(url, bytes), ct);
+            var art = url.StartsWith("demo:", StringComparison.Ordinal)
+                ? await Task.Run(() => Demo(url), ct)
+                : await Task.Run(async () => Decode(url, await Http.GetByteArrayAsync(url, ct)), ct);
             lock (_gate)
             {
                 _lru.AddFirst(art);
@@ -75,6 +76,38 @@ public sealed class ArtworkService
     {
         var image = Load(bytes, DisplayPixels);
         var tiny = Load(bytes, BackdropPixels);
+        var bgra = new FormatConvertedBitmap(tiny, PixelFormats.Bgra32, null, 0);
+        bgra.Freeze();
+        return new Artwork(url, image, bgra, PickAccent(bgra));
+    }
+
+    /// <summary>Procedural cover for <c>--demo</c>: a two-tone gradient with a soft glow.</summary>
+    private static Artwork Demo(string url)
+    {
+        var (a, b) = url switch
+        {
+            "demo:teal" => (Color.FromRgb(0x18, 0xB2, 0xA8), Color.FromRgb(0x0B, 0x24, 0x47)),
+            "demo:amber" => (Color.FromRgb(0xF2, 0xA5, 0x41), Color.FromRgb(0x4B, 0x1D, 0x6E)),
+            _ => (Color.FromRgb(0x8E, 0x6C, 0xFF), Color.FromRgb(0x14, 0x12, 0x3A))
+        };
+        const int n = 256;
+        var px = new byte[n * n * 4];
+        for (var y = 0; y < n; y++)
+        for (var x = 0; x < n; x++)
+        {
+            var t = (x + y) / (2.0 * n);
+            var dx = x - n * 0.68; var dy = y - n * 0.3;
+            var glow = Math.Max(0, 1 - Math.Sqrt(dx * dx + dy * dy) / (n * 0.42));
+            var i = (y * n + x) * 4;
+            px[i] = (byte)Math.Min(255, a.B + (b.B - a.B) * t + 120 * glow * glow);
+            px[i + 1] = (byte)Math.Min(255, a.G + (b.G - a.G) * t + 110 * glow * glow);
+            px[i + 2] = (byte)Math.Min(255, a.R + (b.R - a.R) * t + 100 * glow * glow);
+            px[i + 3] = 255;
+        }
+        var image = BitmapSource.Create(n, n, 96, 96, PixelFormats.Bgra32, null, px, n * 4);
+        image.Freeze();
+        var tiny = new TransformedBitmap(image, new ScaleTransform(BackdropPixels / (double)n, BackdropPixels / (double)n));
+        tiny.Freeze();
         var bgra = new FormatConvertedBitmap(tiny, PixelFormats.Bgra32, null, 0);
         bgra.Freeze();
         return new Artwork(url, image, bgra, PickAccent(bgra));
