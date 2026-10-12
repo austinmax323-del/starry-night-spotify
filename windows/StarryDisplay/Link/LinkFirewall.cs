@@ -40,7 +40,10 @@ public static class LinkFirewall
         var add = $"netsh advfirewall firewall add rule name=\"{RuleName}\" dir=in action=allow protocol=TCP localport={port} " +
                   $"remoteip=localsubnet,100.64.0.0/10 program=\"{exe}\" profile=any " +
                   "description=\"Lets a paired Mac control Starry Display on the local network. Created by Starry Display.\"";
-        var cmd = $"/c netsh advfirewall firewall delete rule name=\"{RuleName}\" >nul 2>&1 & {add}";
+        // Also removes any broad allow/block rules Windows' own "allow this app?" prompt created for
+        // this exe (a block rule would override ours), then adds the one narrow rule.
+        var cmd = $"/c netsh advfirewall firewall delete rule name=all program=\"{exe}\" >nul 2>&1 & " +
+                  $"netsh advfirewall firewall delete rule name=\"{RuleName}\" >nul 2>&1 & {add}";
         try
         {
             using var p = Process.Start(new ProcessStartInfo("cmd.exe", cmd) { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden });

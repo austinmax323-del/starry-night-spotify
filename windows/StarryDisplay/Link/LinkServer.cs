@@ -204,7 +204,7 @@ public sealed class LinkServer : IAsyncDisposable
 
     private static string Signature(IEnumerable<IPAddress> a) => string.Join(",", a.Select(x => x.ToString()).Order());
 
-    /// <summary>RFC1918, CGNAT/Tailscale 100.64/10, link-local, loopback; IPv6 loopback/link-local/ULA.</summary>
+    /// <summary>RFC1918, CGNAT/Tailscale 100.64/10, loopback; IPv6 loopback/link-local/ULA. (Not 169.254: idle adapters.)</summary>
     public static bool IsPrivate(IPAddress ip)
     {
         if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
@@ -215,8 +215,7 @@ public sealed class LinkServer : IAsyncDisposable
         return b[0] == 10
             || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)
             || (b[0] == 192 && b[1] == 168)
-            || (b[0] == 100 && b[1] >= 64 && b[1] <= 127)
-            || (b[0] == 169 && b[1] == 254);
+            || (b[0] == 100 && b[1] >= 64 && b[1] <= 127);
     }
 
     // ---- pairing (started from the Settings window) -------------------------------------------

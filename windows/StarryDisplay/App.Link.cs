@@ -46,6 +46,12 @@ public partial class App : IDisplayHost
     public async Task SetLinkEnabledAsync(bool enabled)
     {
         _settings.LinkEnabled = enabled;
+        if (enabled && !await Task.Run(LinkFirewall.RuleExists))
+        {
+            // Listening on the LAN without a rule makes Windows show its broad "allow on public and
+            // private networks?" prompt. Put the narrow rule in place first (one UAC prompt).
+            await LinkFirewall.CreateRuleAsync(_settings.LinkPort);
+        }
         if (enabled)
         {
             _link ??= new LinkServer(this, _linkKeys!, _settings.LinkPort);
