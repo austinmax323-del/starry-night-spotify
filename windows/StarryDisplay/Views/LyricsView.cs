@@ -30,9 +30,9 @@ public sealed class LyricsView : Grid
 
     private readonly StackPanel _sheet = new() { VerticalAlignment = VerticalAlignment.Top };
     /// <summary>
-    /// Clips the scrolling sheet. The edge-fade mask lives on the outer control, whose content
-    /// bounds are therefore fixed to the viewport. (WPF maps an OpacityMask against the element's
-    /// content bounds, so a mask on the scrolling element itself slides away as lyrics scroll.)
+    /// Clips the scrolling sheet. Deliberately no OpacityMask edge fade: WPF maps a mask against the
+    /// *unclipped* content bounds, which move as the sheet scrolls, so the fade drifts and eventually
+    /// hides the lyrics. Edges are softened instead by dimming lines with distance from the current one.
     /// </summary>
     private readonly Grid _viewport = new() { ClipToBounds = true, Background = Brushes.Transparent };
     private readonly TranslateTransform _scroll = new();
@@ -74,11 +74,7 @@ public sealed class LyricsView : Grid
 
         _lineTimer.Tick += (_, _) => Resync(animate: true);
         _loadingTimer.Tick += (_, _) => { _loadingTimer.Stop(); ShowMessage("Finding lyrics…"); };
-        SizeChanged += (_, _) =>
-        {
-            OpacityMask = EdgeFade(ActualHeight, Layout == LyricsLayout.Strip ? 0.08 : 0.14, Layout == LyricsLayout.Strip ? 0.92 : 0.84);
-            Remeasure(jump: true);
-        };
+        SizeChanged += (_, _) => Remeasure(jump: true);
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible) { Remeasure(jump: true); }
@@ -357,11 +353,11 @@ public sealed class LyricsView : Grid
     {
         0 => 1.0,
         1 => 0.5,
-        2 => 0.34,
-        -1 => 0.36,
-        -2 => 0.22,
-        > 2 => 0.22,
-        _ => 0.12
+        2 => 0.3,
+        3 => 0.18,
+        -1 => 0.32,
+        -2 => 0.14,
+        _ => 0.08
     };
 
     private static double StripOpacity(int d) => d switch { 0 => 1.0, 1 => 0.55, _ => 0.0 };
@@ -379,25 +375,5 @@ public sealed class LyricsView : Grid
         var min = Math.Min(0, ActualHeight * 0.85 - content);
         _manualOffset = Math.Clamp(offset, min, ActualHeight * 0.1);
         Anim.To(_scroll, TranslateTransform.YProperty, _manualOffset + ActualHeight * 0.1, 260);
-    }
-
-    /// <summary>
-    /// Soft top/bottom fade. Absolute mapping on purpose: a relative mask would be sized to the
-    /// whole (scrolled, much taller) lyric sheet instead of the visible viewport.
-    /// </summary>
-    private static Brush EdgeFade(double height, double top, double bottom)
-    {
-        var b = new LinearGradientBrush
-        {
-            MappingMode = BrushMappingMode.Absolute,
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(0, Math.Max(1, height))
-        };
-        b.GradientStops.Add(new GradientStop(Colors.Transparent, 0));
-        b.GradientStops.Add(new GradientStop(Colors.Black, top));
-        b.GradientStops.Add(new GradientStop(Colors.Black, bottom));
-        b.GradientStops.Add(new GradientStop(Colors.Transparent, 1));
-        b.Freeze();
-        return b;
     }
 }
