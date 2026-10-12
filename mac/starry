@@ -416,6 +416,9 @@ COMMANDS = {
 
 def main(argv):
     global QUIET
+    for stream in (sys.stdout, sys.stderr):  # never crash on a console that can't print "→" or "·"
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     if "--quiet" in argv:
         QUIET = True
         argv.remove("--quiet")

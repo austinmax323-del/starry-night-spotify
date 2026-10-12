@@ -207,7 +207,8 @@ public partial class App : IDisplayHost
             CoreState.SignedOut => "signedOut",
             _ => "connecting"
         };
-        var has = _vm.HasItem;
+        // Only describe the item while it's actually current (not "last played" during nothing-playing).
+        var has = _vm.HasItem && _vm.State is CoreState.Playing or CoreState.Paused or CoreState.Ad or CoreState.Offline or CoreState.RateLimited;
         var next = new PlaybackSummary(state, has ? item.Kind.ToString().ToLowerInvariant() : null,
             has ? _vm.Title : null, has ? _vm.Artist : null, string.IsNullOrEmpty(_vm.DeviceName) ? null : _vm.DeviceName,
             _vm.Clock.PositionMs, _vm.Clock.DurationMs);

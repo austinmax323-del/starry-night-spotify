@@ -98,6 +98,7 @@ public partial class App : System.Windows.Application
             if (!_settings.LinkEnabled) await SetLinkEnabledAsync(true);
             OpenSettings();
             _link?.BeginPairing();
+            _settingsWindow?.ShowLinkSection();
         }
     }
 
@@ -201,6 +202,7 @@ public partial class App : System.Windows.Application
             var old = _window;
             var visible = old?.IsVisible ?? true;
             var locked = old?.IsLocked ?? false;
+            old?.ReleaseHotKey(); // let the new window own Ctrl+Alt+L
             _window = CreateWindow(transparent);
             _window!.ShowComposition(effective, _vm, _settings, bounds);
             _window!.ApplySettings(_settings);

@@ -106,6 +106,13 @@ public partial class MainWindow : Window
         UpdateToolbar();
     }
 
+    /// <summary>Gives up Ctrl+Alt+L (before a replacement window registers it).</summary>
+    public void ReleaseHotKey()
+    {
+        var helper = new WindowInteropHelper(this);
+        if (helper.Handle != IntPtr.Zero) NativeMethods.UnregisterToggleHotKey(helper);
+    }
+
     public void CloseForReal()
     {
         _allowClose = true;

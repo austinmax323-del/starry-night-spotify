@@ -84,7 +84,11 @@ public partial class StageView : UserControl, IComposition
         _settings = settings;
         _lyrics.FontScale = settings.LyricsScale;
         BackdropLayer.Visibility = settings.ArtworkBackdrop ? Visibility.Visible : Visibility.Collapsed;
-        BaseFill.Fill = SkyBrush(settings) ?? (Brush)FindResource("NightBrush");
+        var sky = SkyBrush(settings);
+        BaseFill.Fill = sky ?? (Brush)FindResource("NightBrush");
+        // With a theme sky, let it show: thinner legibility veil, quieter artwork glow.
+        Veil.Opacity = sky is null ? 1.0 : 0.55;
+        BackdropLayer.Opacity = sky is null ? 0.58 : 0.34;
     }
 
     /// <summary>

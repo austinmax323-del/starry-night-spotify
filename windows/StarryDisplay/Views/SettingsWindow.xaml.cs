@@ -63,6 +63,13 @@ public partial class SettingsWindow : Window
         RefreshLink();
     }
 
+    /// <summary>Scrolls the Mac link section into view (used by --pair and "Pair a Mac" from elsewhere).</summary>
+    public void ShowLinkSection()
+    {
+        if (IsLoaded) LinkBox.BringIntoView(new Rect(0, 0, 1, 900));
+        else Loaded += (_, _) => LinkBox.BringIntoView(new Rect(0, 0, 1, 900));
+    }
+
     private void RefreshLink()
     {
         var server = _link?.Invoke();
@@ -78,7 +85,9 @@ public partial class SettingsWindow : Window
             ? "Off. When on, a paired Mac can change the layout, visibility, overlay and theme. Spotify sign-in never leaves this PC."
             : s is null || !s.Running
                 ? $"Not running. {s?.Error}"
-                : $"Listening on {string.Join(", ", s.Endpoints.Where(e => !e.StartsWith("127.")))} · reach it from the Mac as {host}"
+                : (s.Endpoints.Any(e => !e.StartsWith("127."))
+                      ? $"Listening on {string.Join(", ", s.Endpoints.Where(e => !e.StartsWith("127.")))} · reach it from the Mac as {host}"
+                      : "Listening on this PC only")
                   + (s.Error is null ? "" : $" · {s.Error}")
                   + (s.EventClients > 0 ? $" · {s.EventClients} live connection{(s.EventClients == 1 ? "" : "s")}" : "");
 
