@@ -66,7 +66,12 @@ public partial class App : System.Windows.Application
         IPlaybackSource source = _demo ? new DemoPlaybackSource() : _spotify;
         ILyricsProvider lyrics = _demo ? new DemoLyricsProvider() : new CachedLyricsProvider(new LrclibLyricsProvider(), _store.DataDirectory);
         _controller = new PlaybackController(source, lyrics, new ArtworkService(), _vm);
-        if (_demo) Log.Write("Demo mode: scripted playback, no Spotify calls.");
+        if (_demo)
+        {
+            Log.Write("Demo mode: scripted playback, no Spotify calls.");
+            var layoutArg = e.Args.FirstOrDefault(a => a.StartsWith("--layout=", StringComparison.OrdinalIgnoreCase));
+            if (layoutArg is not null) _settings.Layout = layoutArg["--layout=".Length..].ToLowerInvariant() == Layouts.Strip ? Layouts.Strip : Layouts.Stage;
+        }
 
         _saveTimer.Tick += async (_, _) => { _saveTimer.Stop(); await SaveAsync(); };
 
