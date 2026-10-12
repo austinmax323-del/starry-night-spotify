@@ -63,13 +63,16 @@ public sealed class LyricsView : Grid
         Children.Add(_sheet);
         Children.Add(_message);
 
-        OpacityMask = EdgeFade(layout == LyricsLayout.Strip ? 0.08 : 0.14, layout == LyricsLayout.Strip ? 0.92 : 0.84);
         _message.FontFamily = (FontFamily)Application.Current.FindResource("DisplayFont");
         _message.Foreground = (Brush)Application.Current.FindResource("InkMutedBrush");
 
         _lineTimer.Tick += (_, _) => Resync(animate: true);
         _loadingTimer.Tick += (_, _) => { _loadingTimer.Stop(); ShowMessage("Finding lyrics…"); };
-        SizeChanged += (_, _) => Remeasure(jump: true);
+        SizeChanged += (_, _) =>
+        {
+            OpacityMask = EdgeFade(ActualHeight, Layout == LyricsLayout.Strip ? 0.08 : 0.14, Layout == LyricsLayout.Strip ? 0.92 : 0.84);
+            Remeasure(jump: true);
+        };
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible) { Remeasure(jump: true); }
@@ -339,6 +342,7 @@ public sealed class LyricsView : Grid
         }
 
         var target = ActualHeight * Anchor - (_tops[focus] + _heights[focus] / 2);
+        Services.Log.Trace(() => $"Lyrics.Active {index} animate={animate} scrollTo={target:0} sheetOpacity={_sheet.Opacity:0.00}");
         if (animate) Anim.To(_scroll, TranslateTransform.YProperty, target, strip ? 430 : 560);
         else Anim.Set(_scroll, TranslateTransform.YProperty, target);
     }
@@ -371,9 +375,18 @@ public sealed class LyricsView : Grid
         Anim.To(_scroll, TranslateTransform.YProperty, _manualOffset + ActualHeight * 0.1, 260);
     }
 
-    private static Brush EdgeFade(double top, double bottom)
+    /// <summary>
+    /// Soft top/bottom fade. Absolute mapping on purpose: a relative mask would be sized to the
+    /// whole (scrolled, much taller) lyric sheet instead of the visible viewport.
+    /// </summary>
+    private static Brush EdgeFade(double height, double top, double bottom)
     {
-        var b = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+        var b = new LinearGradientBrush
+        {
+            MappingMode = BrushMappingMode.Absolute,
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0, Math.Max(1, height))
+        };
         b.GradientStops.Add(new GradientStop(Colors.Transparent, 0));
         b.GradientStops.Add(new GradientStop(Colors.Black, top));
         b.GradientStops.Add(new GradientStop(Colors.Black, bottom));
