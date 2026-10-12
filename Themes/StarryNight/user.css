@@ -1232,3 +1232,11 @@ body.sfx-win .Root__top-container { padding-bottom: 8px; }
 body.sfx-win .Root__top-container { grid-template-columns: auto minmax(0, 1fr) auto !important; }
 body.sfx-win .Root__top-container > .Root__now-playing-bar { grid-column: 3 !important; grid-row: 2 / -1 !important; }
 body.sfx-win .Root__top-container > .Root__main-view { grid-column: 2 !important; }
+/* Windows dock: Spotify absolutely-positions the search block across the whole pill, stacking it over
+   home / history. Keep every dock item in normal flow on one row (the skip link stays hidden off-flow). */
+body.sfx-win .Root__globalNav > *:not(.e-10860-skip-link) {
+  position: static !important; inset: auto !important; transform: none !important;
+  flex: 0 0 auto !important; width: auto !important; max-width: none !important; margin: 0 !important;
+}
+body.sfx-win .Root__globalNav { gap: 10px !important; flex-wrap: nowrap !important; overflow: visible !important; }
+body.sfx-win .Root__globalNav > * > * { position: relative; }
