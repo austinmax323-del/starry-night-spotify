@@ -73,6 +73,23 @@ git clone https://github.com/austinmax323-del/starry-night-spotify ~/.config/spi
 spicetify backup apply
 ```
 
-After Spotify updates itself, run `~/.config/spicetify/starry-repair.sh`.
+### Windows
+
+This branch is the Windows port. In PowerShell:
+
+```powershell
+git clone -b windows https://github.com/austinmax323-del/starry-night-spotify
+cd starry-night-spotify
+powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+```
+
+It installs Spicetify if needed, copies the theme in, installs free stand-ins for the macOS fonts
+(Libre Caslon Text, Jost, Nunito Sans) for your user only, and applies. After Spotify updates, run `.\starry-repair.ps1`.
+
+Windows differences:
+- `Extensions/starry-win.js` maps Spotify's newer now-playing widget (`now-playing-widget-v2`) onto the classes the theme styles, so the vinyl player works on builds that ship it.
+- The player column sits below the window's minimise / maximise / close buttons, the dock is lifted clear of the window edge, and the record shrinks on short (1080p) screens.
+
+On macOS, after Spotify updates itself, run `~/.config/spicetify/starry-repair.sh`.
 
 `CustomApps/marketplace` is the upstream [Spicetify Marketplace](https://github.com/spicetify/marketplace); `CustomApps/backmusic` is a third-party visualizer.

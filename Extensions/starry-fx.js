@@ -693,14 +693,14 @@ window.sfxEvery(() => {
     } catch {}
     x.fillStyle = "#0c0c0c"; x.beginPath(); x.arc(cx, cy, 9, 0, 7); x.fill();
     x.textAlign = "center"; x.fillStyle = "#fff";
-    x.font = "500 78px 'Big Caslon', serif";
+    x.font = "500 78px 'Big Caslon', 'Libre Caslon Text', serif";
     const title = it.name || it.metadata?.title || "";
     let t = title; while (x.measureText(t).width > W - 140 && t.length > 4) t = t.slice(0, -2);
     x.fillText(t === title ? t : t + "…", cx, 1420);
-    x.fillStyle = "rgba(255,255,255,.7)"; x.font = "500 30px Futura, sans-serif";
+    x.fillStyle = "rgba(255,255,255,.7)"; x.font = "500 30px Futura, Jost, sans-serif";
     x.letterSpacing = "10px";
     x.fillText((it.artists || []).map(a => a.name).join(", ").toUpperCase() || (it.metadata?.artist_name || "").toUpperCase(), cx, 1490);
-    x.font = "400 22px Futura, sans-serif"; x.fillStyle = "rgba(255,255,255,.45)";
+    x.font = "400 22px Futura, Jost, sans-serif"; x.fillStyle = "rgba(255,255,255,.45)";
     x.fillText("NOW PLAYING", cx, 260);
     const blob = await new Promise(r => c.toBlob(r, "image/png"));
     try { await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); } catch {}

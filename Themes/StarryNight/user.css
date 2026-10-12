@@ -603,18 +603,18 @@ body.sfx-cinema .sfx-planet { top: 12vh; right: auto; left: 10vw; width: 170px; 
 /* ---------- Identity pass ---------- */
 
 /* Type: Futura for display (space-age, Kubrick/NASA), Avenir Next for UI */
-body, :where(body *) { font-family: "Avenir Next", "Avenir", sans-serif !important; }
+body, :where(body *) { font-family: "Avenir Next", "Nunito Sans", "Avenir", sans-serif !important; }
 /* Section headings -> Futura */
 h2, h2 *, [class*="encore-text-title"], [class*="encore-text-title"] * {
-  font-family: "Futura", "Avenir Next", sans-serif !important; letter-spacing: .01em;
+  font-family: "Futura", "Jost", "Avenir Next", "Nunito Sans", sans-serif !important; letter-spacing: .01em;
 }
 /* Hero titles ("Liked Songs", album/artist names) -> Big Caslon */
 h1, h1 * {
-  font-family: "Big Caslon", "Baskerville", serif !important;
+  font-family: "Big Caslon", "Libre Caslon Text", "Baskerville", serif !important;
   font-weight: 500 !important; letter-spacing: -.015em; line-height: 1.05 !important;
 }
 /* Track + artist names stay in Avenir Next */
-.main-trackInfo-name, .main-trackInfo-name * { font-family: "Avenir Next", sans-serif !important; font-weight: 600 !important; }
+.main-trackInfo-name, .main-trackInfo-name * { font-family: "Avenir Next", "Nunito Sans", sans-serif !important; font-weight: 600 !important; }
 
 /* Kill Spotify green + branded chips */
 .encore-dark-theme, .encore-dark-theme .encore-base-set, .encore-dark-theme .encore-bright-accent-set {
@@ -693,7 +693,7 @@ img[src*="newjams-images"], img[src*="mosaic.scdn.co"] {
 
 /* Up next mini records */
 .sfx-next { width: 100%; max-width: 340px; margin: 6px auto 0; display: flex; flex-direction: column; gap: 10px; }
-.sfx-next-label { font-family: "Futura", sans-serif; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgba(var(--spice-rgb-subtext), .7); }
+.sfx-next-label { font-family: "Futura", "Jost", sans-serif; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgba(var(--spice-rgb-subtext), .7); }
 .sfx-next-item { display: flex; align-items: center; gap: 12px; opacity: .85; }
 .sfx-mini {
   flex: 0 0 38px; height: 38px; border-radius: 50%; position: relative; overflow: hidden;
@@ -730,8 +730,8 @@ body.sfx-intro-on #main { opacity: 0; }
   position: absolute; left: 0; right: 0; bottom: 9vh; text-align: center; opacity: var(--title, 0);
   transform: translateY(calc((1 - var(--title, 0)) * 14px)); color: #fff; pointer-events: none;
 }
-.sfx-intro-title .t { font-family: "Big Caslon", serif !important; font-size: 54px; letter-spacing: -.01em; text-shadow: 0 0 30px rgba(255,255,255,.35); }
-.sfx-intro-title .a { margin-top: 6px; font-family: "Futura", sans-serif !important; font-size: 13px; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.6); }
+.sfx-intro-title .t { font-family: "Big Caslon", "Libre Caslon Text", serif !important; font-size: 54px; letter-spacing: -.01em; text-shadow: 0 0 30px rgba(255,255,255,.35); }
+.sfx-intro-title .a { margin-top: 6px; font-family: "Futura", "Jost", sans-serif !important; font-size: 13px; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.6); }
 .sfx-intro-flash {
   position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; opacity: 0; pointer-events: none;
   box-shadow: 0 0 60px 30px rgba(255,255,255,.9), 0 0 0 2px rgba(255,255,255,.9);
@@ -833,7 +833,7 @@ body:not(.sfx-artist-more) [data-testid="artist-page"] section:is(
 ) { display: none !important; }
 .sfx-more-pill {
   display: block; margin: 28px auto 40px; padding: 10px 22px; border-radius: 999px; cursor: pointer;
-  font-family: "Futura", sans-serif !important; font-size: 11px; letter-spacing: .25em; text-transform: uppercase;
+  font-family: "Futura", "Jost", sans-serif !important; font-size: 11px; letter-spacing: .25em; text-transform: uppercase;
   color: var(--spice-text); background: rgba(var(--spice-rgb-text), .06); border: 1px solid rgba(var(--spice-rgb-text), .16);
 }
 .sfx-more-pill:hover { background: rgba(var(--spice-rgb-text), .12); }
@@ -854,7 +854,7 @@ img[src*="/img/radio/"] { clip-path: inset(15% 0 0 0 round 6px); }
 
 /* 6. shelf headings as chapters, with a hairline running out to "Show all" */
 section[data-testid="component-shelf"] h2[data-ch]::before {
-  content: attr(data-ch) "  —  "; font-family: "Futura", sans-serif !important; font-weight: 400;
+  content: attr(data-ch) "  —  "; font-family: "Futura", "Jost", sans-serif !important; font-weight: 400;
   font-size: .5em; letter-spacing: .2em; vertical-align: middle; opacity: .45;
 }
 section[data-testid="component-shelf"] .e-10860-legacy-list-row__header { align-items: center; }
@@ -879,13 +879,13 @@ section[data-testid="component-shelf"] { margin-bottom: 44px !important; }
 }
 /* 2. name in Big Caslon, listeners in small Futura caps */
 [data-testid="adaptiveEntityTitle"], [data-testid="adaptiveEntityTitle"] * {
-  font-family: "Big Caslon", serif !important; font-weight: 500 !important; letter-spacing: -.015em !important;
+  font-family: "Big Caslon", "Libre Caslon Text", serif !important; font-weight: 500 !important; letter-spacing: -.015em !important;
 }
-.sfx-listeners { font-family: "Futura", sans-serif !important; font-size: 12px !important; letter-spacing: .28em; text-transform: uppercase; opacity: .75; }
+.sfx-listeners { font-family: "Futura", "Jost", sans-serif !important; font-size: 12px !important; letter-spacing: .28em; text-transform: uppercase; opacity: .75; }
 /* 7. verified badge -> gold star */
 svg.sfx-star { fill: #ffd98a !important; color: #ffd98a !important; filter: drop-shadow(0 0 5px rgba(255, 200, 100, .7)); }
 /* 3. popular tracks: Futura numbers, covers as small records that spin on hover */
-[data-testid="artist-page"] .main-trackList-rowSectionIndex { font-family: "Futura", sans-serif !important; letter-spacing: .12em; opacity: .55; }
+[data-testid="artist-page"] .main-trackList-rowSectionIndex { font-family: "Futura", "Jost", sans-serif !important; letter-spacing: .12em; opacity: .55; }
 [data-testid="artist-page"] .main-trackList-rowSectionStart img {
   border-radius: 50% !important;
   box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.12), 0 4px 10px rgba(0,0,0,.6);
@@ -930,7 +930,7 @@ body:not(.sfx-on-artist) .sfx-artist-tint { opacity: 0; }
   box-shadow: 0 0 30px 6px rgba(255,255,255,.12);
 }
 .main-view-container a > div[style*="background-color"]:has(> img.main-image-image):has(> span) > span {
-  position: relative; z-index: 2; font-family: "Futura", sans-serif !important; font-weight: 500 !important;
+  position: relative; z-index: 2; font-family: "Futura", "Jost", sans-serif !important; font-weight: 500 !important;
   letter-spacing: .14em; text-transform: uppercase; font-size: 15px !important;
 }
 
@@ -954,13 +954,13 @@ body.sfx-scrolling .Root__globalNav { transform: translate(-50%, 150%) !importan
 }
 .sfx-top-hit [data-testid="title"],
 .sfx-top-hit [data-testid="title"] * {
-  font-family: "Big Caslon", serif !important; font-size: 42px !important; line-height: 1.1 !important; font-weight: 500 !important;
+  font-family: "Big Caslon", "Libre Caslon Text", serif !important; font-size: 42px !important; line-height: 1.1 !important; font-weight: 500 !important;
 }
 .sfx-top-hit [data-testid="subtitle"] {
-  font-family: "Futura", sans-serif !important; letter-spacing: .25em; text-transform: uppercase; font-size: 11px !important; opacity: .7;
+  font-family: "Futura", "Jost", sans-serif !important; letter-spacing: .25em; text-transform: uppercase; font-size: 11px !important; opacity: .7;
 }
 body.sfx-on-search .main-view-container [data-testid="preTitle"] {
-  font-family: "Futura", sans-serif !important; letter-spacing: .3em; text-transform: uppercase; font-size: 11px !important; opacity: .6;
+  font-family: "Futura", "Jost", sans-serif !important; letter-spacing: .3em; text-transform: uppercase; font-size: 11px !important; opacity: .6;
 }
 
 /* ---------- Library rail: a crate of records you flip through ---------- */
@@ -997,7 +997,7 @@ ul[role="menu"] {
   border: 1px solid rgba(255,255,255,.09) !important; border-radius: 14px !important; box-shadow: 0 18px 50px rgba(0,0,0,.6) !important; padding: 6px !important;
 }
 ul[role="menu"] [role="menuitem"] { border-radius: 9px !important; }
-ul[role="menu"] [role="menuitem"], ul[role="menu"] [role="menuitem"] * { font-family: "Futura", sans-serif !important; font-size: 13px !important; letter-spacing: .04em; }
+ul[role="menu"] [role="menuitem"], ul[role="menu"] [role="menuitem"] * { font-family: "Futura", "Jost", sans-serif !important; font-size: 13px !important; letter-spacing: .04em; }
 ul[role="menu"] [role="menuitem"]:hover { background: rgba(var(--spice-rgb-text), .08) !important; }
 ul[role="menu"] hr, ul[role="menu"] [role="separator"] { border-color: rgba(255,255,255,.08) !important; opacity: .6; }
 .sfx-like-item svg { color: #ffd98a !important; fill: #ffd98a !important; filter: drop-shadow(0 0 4px rgba(255,200,100,.6)); }
@@ -1076,7 +1076,7 @@ body.sfx-queue-open .Root__right-sidebar {
 body.sfx-queue-open .Root__right-sidebar * { background-color: transparent !important; }
 body.sfx-queue-open .Root__right-sidebar img { border-radius: 50% !important; box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.12); }
 body.sfx-queue-open .Root__right-sidebar h1, body.sfx-queue-open .Root__right-sidebar h2,
-body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", sans-serif !important; letter-spacing: .14em; text-transform: uppercase; font-size: 12px !important; }
+body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", "Jost", sans-serif !important; letter-spacing: .14em; text-transform: uppercase; font-size: 12px !important; }
 
 /* ---------- Settings: glass sections, theme type ---------- */
 .x-settings-section {
@@ -1084,7 +1084,7 @@ body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", s
   padding: 18px 22px !important; margin-bottom: 18px !important;
 }
 .x-settings-section > h2, .x-settings-section h2 {
-  font-family: "Futura", sans-serif !important; font-weight: 500 !important; font-size: 12px !important; letter-spacing: .26em; text-transform: uppercase; opacity: .8;
+  font-family: "Futura", "Jost", sans-serif !important; font-weight: 500 !important; font-size: 12px !important; letter-spacing: .26em; text-transform: uppercase; opacity: .8;
 }
 .x-settings-row { border-radius: 10px; padding: 6px 8px; transition: background .2s; }
 .x-settings-row:hover { background: rgba(255,255,255,.04); }
@@ -1096,7 +1096,7 @@ body.sfx-queue-open .Root__right-sidebar [role="tab"] { font-family: "Futura", s
 .sfx-con svg { width: 170px; height: 110px; overflow: visible; }
 .sfx-con line { stroke: rgba(var(--spice-rgb-text), .35); stroke-width: .6; }
 .sfx-con circle { fill: rgb(var(--spice-rgb-star)); }
-.sfx-con figcaption { font-family: "Futura", sans-serif !important; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.75); margin-top: 4px; text-shadow: 0 0 8px rgba(255,255,255,.35); }
+.sfx-con figcaption { font-family: "Futura", "Jost", sans-serif !important; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.75); margin-top: 4px; text-shadow: 0 0 8px rgba(255,255,255,.35); }
 .sfx-con.lit { opacity: .9; filter: drop-shadow(0 0 6px rgba(var(--spice-rgb-star), .8)); }
 body.sfx-off-drift .sfx-const { translate: none; }
 body.sfx-off-const .sfx-const { display: none !important; }
@@ -1195,3 +1195,35 @@ body.sfx-cinema .Root__now-playing-bar .main-trackInfo-container { text-align: c
 section.sfx-newrel { visibility: hidden !important; }
 /* the shelf beside the hidden new-release block: hide all its cards, keep the heading and the space */
 section.sfx-newrel-row [data-encore-id="card"], section.sfx-newrel-row .sfx-shelf > * { visibility: hidden !important; }
+
+/* ---------- Windows: v2 now-playing widget + caption buttons (tagged by starry-win.js) ---------- */
+/* keep the player column clear of the minimise / maximise / close buttons */
+body.sfx-win .Root__now-playing-bar { padding-top: 56px !important; box-sizing: border-box; }
+body.sfx-win .Root__now-playing-bar .main-nowPlayingBar-container { height: calc(100% - 72px) !important; }
+/* v2 lays the cover, title and buttons out in a row; stack them like the classic widget */
+.Root__now-playing-bar .sfx-v2 {
+  display: flex !important; flex-direction: column !important; align-items: center !important;
+  justify-content: center !important; text-align: center; width: 100% !important; gap: 18px !important;
+}
+.Root__now-playing-bar .sfx-v2 > * { margin: 0 auto !important; max-width: 100%; }
+.Root__now-playing-bar .sfx-v2 .main-nowPlayingWidget-coverArt { width: auto !important; height: auto !important; display: flex; justify-content: center; }
+.Root__now-playing-bar .sfx-v2 [data-testid="cover-art-button"] { width: auto !important; height: auto !important; padding: 0 !important; background: none !important; border-radius: 50% !important; overflow: visible !important; }
+/* the 56px thumbnail stretches to fill the record */
+.Root__now-playing-bar .sfx-v2 .cover-art img,
+.Root__now-playing-bar .sfx-v2 .cover-art > * { width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; object-fit: cover; }
+.Root__now-playing-bar .sfx-v2 .main-trackInfo-container { align-items: center !important; text-align: center; min-width: 0; }
+.Root__now-playing-bar .sfx-v2 .main-trackInfo-name, .Root__now-playing-bar .sfx-v2 .main-trackInfo-artists { justify-content: center; }
+/* short (1080p) screens: shrink the record so controls and up-next still fit */
+@media (max-height: 950px) {
+  .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { width: 240px !important; height: 240px !important; }
+  .Root__now-playing-bar .main-nowPlayingBar-nowPlayingBar { gap: 10px !important; }
+}
+@media (max-height: 760px) {
+  .Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art { width: 190px !important; height: 190px !important; }
+  .sfx-next { display: none; }
+}
+/* Windows: the frameless window's bottom edge clips the dock; lift it clear and keep content scrolling above it */
+body.sfx-win .Root__globalNav { bottom: 34px !important; z-index: 100 !important; }
+body.sfx-win .main-view-container__scroll-node-child,
+body.sfx-win .main-view-container [data-overlayscrollbars-viewport] > div { padding-bottom: 120px !important; }
+body.sfx-win .Root__top-container { padding-bottom: 8px; }
