@@ -80,6 +80,23 @@ How it stays light:
 - **Windows:** the card is a normal window composited by the GPU. Only the small strip uses WPF's per-pixel-transparent mode, which copies each frame back from the GPU.
 - **Artwork:** decoded once off the UI thread. The glow is a 28 px copy stretched smoothly, so there's no blur effect to render each frame.
 
+## Mac link (optional)
+
+Turn it on in **Settings → Mac link**. Then a paired Mac can change the layout, visibility,
+always-on-top, click-through, live/paused mode and theme (accent, sky, lyric size, glow), and send
+expiring context hints. The display keeps getting Spotify state itself, so the Mac is never required,
+and **no Spotify credentials cross the network**.
+
+1. Turn on **Allow control from my Mac**. If needed, approve the one admin prompt; it creates a narrow
+   firewall rule (this app, port 47836, local subnet and Tailscale only). Until that rule exists, the link
+   listens on this PC only, so Windows never shows its broad "allow on public networks" prompt.
+2. Click **Pair a Mac…** and run the command it shows on the Mac (`starry pair zxcvbn.local CODE`).
+   See [mac/README.md](../mac/README.md).
+3. Settings shows paired Macs, live connections, Mac context and recent requests. The log has `[link]` lines.
+
+`StarryDisplay.exe --pair` turns the link on and opens a pairing code directly.
+Protocol, security model and reconnection behaviour: [protocol/PROTOCOL.md](../protocol/PROTOCOL.md).
+
 ## Where things live
 
 `%APPDATA%\StarryDisplay\`
@@ -89,7 +106,8 @@ How it stays light:
 | `settings.json` | Client ID (public by design), layout, window positions, preferences |
 | `token.bin` | Spotify tokens, **encrypted with Windows DPAPI**, so only your Windows account can read them |
 | `lyrics-cache.v2.json` | Cached lyrics (hits 30 days, misses 12 h) |
-| `app.log` | Startup, track changes, errors. Never tokens. Create `diag.flag` here for verbose lyric tracing. |
+| `link-keys.bin` | Paired Macs' link keys, **DPAPI-encrypted** |
+| `app.log` | Startup, track changes, errors, `[link]` activity. Never tokens or keys. Create `diag.flag` here for verbose lyric tracing. |
 
 ## Architecture
 
@@ -104,17 +122,20 @@ StarryDisplay/
     PollPolicy.cs             how long until the next poll (pure, tested)
     SpotifyPlayerParser.cs    /me/player JSON → snapshot (track, episode, ad, unsupported)
   Lyrics/                     isolated module: ILyricsProvider, LRCLIB provider, disk cache, LRC parser
+  Link/                       Mac link: contract (LinkProtocol), crypto (LinkAuth), server (Kestrel), keys, firewall
+  App.Link.cs                 the app's side of the link (IDisplayHost over the same commands as the tray)
   Services/                   Spotify (PKCE, DPAPI tokens), artwork, settings, tray, autostart, log, demo
   Views/
     IComposition.cs           the contract a layout implements
     StageView, StripView      the two compositions
     LyricsView.cs             shared synced-lyrics control (sheet or strip)
     SetupView, SettingsWindow, Anim.cs
-StarryDisplay.Tests/          22 tests over the UI-free core
+StarryDisplay.Tests/          38 tests over the UI-free core and link contract/crypto (incl. Python-computed vectors)
 ```
 
 **Adding a composition:** implement `IComposition` on a UserControl, subscribe to the view model's events,
 and register it in `MainWindow.CreateComposition`.
 
-**Future Mac link (not built yet):** implement `IPlaybackSource` (for example a LAN/Tailscale listener fed by
-the Mac) and hand it to `PlaybackController`. The UI only ever sees the view model.
+**Mac playback hints (not needed today):** the link carries display settings and context, not
+playback. If a later phase wants the Mac to *supply* playback, it can implement `IPlaybackSource` and hand it to
+`PlaybackController`. The UI only ever sees the view model.

@@ -130,3 +130,47 @@ No reusable WPF control did "lyrics driven by a remote, polled playback clock", 
 - Line-level sync only (no word-by-word karaoke). `Lyricify-Lyrics-Helper` is the candidate if that's wanted later.
 - A seek on the phone takes up to ~3 s (one poll) to reach the PC.
 - The strip floats over borderless or windowed games, not exclusive-fullscreen ones (a later phase).
+
+---
+
+# Phase 2: Mac ↔ Windows link
+
+Researched and built 2026-10-12. Goal: the smallest clean local channel so the Mac can steer the display,
+without turning this into a distributed system.
+
+## What was looked at
+
+- **This repo:** the Mac side is a Spicetify theme plus zsh scripts (`theme-cycle.sh`, `starry-repair.sh`), so a
+  terminal-friendly client fits. The Spicetify extension can't be the client: Spotify's HTTPS UI can't call
+  an `http://` LAN host.
+- **Your Orynth project:** it already runs Mac (control plane) ↔ this PC over Tailscale with the same rules (no secrets
+  between machines, no remote shell). Tailscale is installed here but wasn't running, so the link works on the plain
+  LAN and also binds Tailscale's 100.64/10 when it's up.
+- **This PC's network:** the Wi-Fi is classified *Public* (inbound blocked by default), Portmaster runs, and
+  Bonjour is present, so the Mac resolves as `as-macbook-air.local` and the PC as `zxcvbn.local`.
+- **Transports:** compared in [protocol/PROTOCOL.md](../protocol/PROTOCOL.md#why-this-transport). Chose HTTP/JSON + Server-Sent
+  Events on **Kestrel** (part of the .NET runtime already installed, mature, no URL-ACL/admin needed, unlike
+  `HttpListener`), and **Python's standard library** on the Mac (`hmac`, `hashlib.pbkdf2_hmac`, `urllib`) with the
+  **Keychain** via `security`. No third-party packages on either side.
+
+## Decisions
+
+| Decision | Why |
+| --- | --- |
+| PC serves, Mac is a client | The display is the always-on side; the Mac needs no daemon |
+| Display keeps polling Spotify itself | Works without the Mac; no Spotify credentials cross machines |
+| Off by default; explicit addresses; peer filter; loopback-only until a narrow firewall rule exists | Conservative exposure. Avoids Windows' broad prompt; a "Cancel" there would have created block rules that override the narrow one (observed, then handled by replacing them) |
+| Short-code pairing → per-device key; HMAC-signed requests with ±120 s skew and nonce replay guard | Lightweight auth for commands that change the display; no account system, no TLS certificates to manage |
+| State snapshot on every event-stream connect | Reconnection needs no replay logic |
+| Context is stored and expiring but not acted on | A slot for later phases without designing them now |
+| Theme sync from the Mac's Starry Night `color.ini` (button → accent, sidebar-alt/sidebar → sky) | The one piece of "context" that's useful today, and it ties the two machines' looks together |
+
+## Verified on the PC
+
+- 38 unit tests pass, including C#⇄Python vectors for signing, PBKDF2, proof, box and tag.
+- Live server: pairing with the short code; layout, theme and context from the client; 11/11 negative checks
+  (unsigned, tampered body, wrong signature, replay, clock skew, invalid values → 422 with details, unknown endpoint,
+  pairing closed, unknown fields ignored).
+- Reconnection: killed the app under a live `starry watch`; it backed off 1 s → 2 s, reconnected about 1 s after
+  relaunch with full state, and kept receiving events. Display settings persisted; context lapsed as designed.
+- The cross-machine path (Mac → PC over Wi-Fi through the firewall rule and Portmaster) still needs one run from the Mac.
