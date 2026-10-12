@@ -16,16 +16,19 @@
       while (el.parentElement && !el.parentElement.classList.contains("Root__top-container")) el = el.parentElement;
       tag(el.parentElement ? el : bar, "Root__now-playing-bar");
     }
-    const w =document.querySelector('[data-testid="now-playing-widget-v2"]');
-    if (!w) return;
+    if (!bar || bar.querySelector(".main-nowPlayingWidget-coverArt .cover-art:not(.sfx-tagged)")) return;
+    // the cover button exists in every widget variant; work outwards from it
+    const btn = bar.querySelector('[data-testid="cover-art-button"]');
+    if (!btn) return;
+    const slot = btn.closest('[data-testid="cover-art-container"], [data-testid="cover-art-slot"]') || btn.parentElement;
+    const w = btn.closest('[data-testid="now-playing-widget-v2"]') || slot.parentElement;
     tag(w, "main-nowPlayingWidget-nowPlaying");
     tag(w, "sfx-v2");
-    const slot = w.querySelector('[data-testid="cover-art-container"]');
     tag(slot, "main-nowPlayingWidget-coverArt");
-    const btn = slot && slot.querySelector('[data-testid="cover-art-button"]');
     // the element that directly wraps the image becomes the record
     const art = btn && (btn.firstElementChild || btn);
     tag(art, "cover-art");
+    tag(art, "sfx-tagged");
     const info = slot && slot.nextElementSibling;
     if (info) {
       tag(info, "main-trackInfo-container");
@@ -48,7 +51,7 @@
     const out = { win: [innerWidth, innerHeight, devicePixelRatio], body: document.body.className,
       dock: chain(nav), dockKids: nav ? [...nav.children].map(r) : null,
       npb: r(document.querySelector(".Root__now-playing-bar")), npbV2: r(document.querySelector('[data-testid="now-playing-widget-v2"]')),
-      cover: r(document.querySelector(".Root__now-playing-bar .cover-art")), top: r(document.querySelector(".Root__top-container")),
+      cover: r(document.querySelector(".Root__now-playing-bar .cover-art")), coverBtn: r(document.querySelector('[data-testid="cover-art-button"]')), grid: getComputedStyle(document.querySelector(".Root__top-container")).gridTemplateColumns, main: r(document.querySelector(".Root__main-view")), top: r(document.querySelector(".Root__top-container")),
       atBottom: [.25, .5, .75].map(f => r(document.elementFromPoint(innerWidth * f, innerHeight - 30))) };
     const text = JSON.stringify(out);
     navigator.clipboard.writeText(text).then(

@@ -1227,3 +1227,8 @@ body.sfx-win .Root__globalNav { bottom: 34px !important; z-index: 100 !important
 body.sfx-win .main-view-container__scroll-node-child,
 body.sfx-win .main-view-container [data-overlayscrollbars-viewport] > div { padding-bottom: 120px !important; }
 body.sfx-win .Root__top-container { padding-bottom: 8px; }
+/* Windows: this build's grid has extra column tracks, which dropped the player into the middle.
+   Pin three columns: library rail | main view | player (sized by the player's own width rules) */
+body.sfx-win .Root__top-container { grid-template-columns: auto minmax(0, 1fr) auto !important; }
+body.sfx-win .Root__top-container > .Root__now-playing-bar { grid-column: 3 !important; grid-row: 2 / -1 !important; }
+body.sfx-win .Root__top-container > .Root__main-view { grid-column: 2 !important; }
