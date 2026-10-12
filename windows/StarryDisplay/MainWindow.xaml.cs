@@ -5,16 +5,17 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using SpotifyLyricsOverlay.Wpf.Models;
-using SpotifyLyricsOverlay.Wpf.Services;
+using StarryDisplay.Models;
+using StarryDisplay.Services;
 using WinForms = System.Windows.Forms;
 
-namespace SpotifyLyricsOverlay.Wpf;
+namespace StarryDisplay;
 
 public partial class MainWindow : Window
 {
     private readonly SettingsStore _store = new();
     private readonly SpotifyService _spotify;
+    private readonly IPlaybackSource _playback; // Web API today; future Mac link plugs in here
     private readonly LyricsService _lyricsService;
     private readonly DispatcherTimer _playerTimer = new();
     private readonly DispatcherTimer _lyricsTimer = new();
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _spotify = new SpotifyService(_store);
+        _playback = _spotify;
         _lyricsService = new LyricsService(_store);
 
         _playerTimer.Interval = TimeSpan.FromMilliseconds(2500);
@@ -95,8 +97,8 @@ public partial class MainWindow : Window
     {
         _tray = new WinForms.NotifyIcon
         {
-            Text = "Spotify Lyrics Overlay",
-            Icon = System.Drawing.SystemIcons.Application,
+            Text = "Starry Display",
+            Icon = LoadTrayIcon(),
             Visible = true,
             ContextMenuStrip = new WinForms.ContextMenuStrip()
         };
@@ -116,6 +118,20 @@ public partial class MainWindow : Window
 
             ToggleWindow();
         };
+    }
+
+    private static System.Drawing.Icon LoadTrayIcon()
+    {
+        try
+        {
+            var exe = Environment.ProcessPath;
+            if (exe is not null && System.Drawing.Icon.ExtractAssociatedIcon(exe) is { } icon) return icon;
+        }
+        catch (Exception ex)
+        {
+            Log.Write("Tray icon fallback.", ex);
+        }
+        return System.Drawing.SystemIcons.Application;
     }
 
     private void ToggleWindow()
@@ -169,22 +185,34 @@ public partial class MainWindow : Window
 
         try
         {
-            var track = await _spotify.GetPlayerAsync();
+            var track = await _playback.GetPlaybackAsync();
             if (track is null)
             {
+                if (!await _spotify.HasTokenAsync())
+                {
+                    // Refresh token was revoked: send the user back to Connect instead of polling forever.
+                    ResetPlaybackState();
+                    SetupStatus.Text = "Spotify sign-in expired. Connect again.";
+                    ShowSetup();
+                    return;
+                }
+
                 ResetPlaybackState();
-                TrackTitle.Text = "Waiting for Spotify";
-                TrackArtist.Text = "Play a song in Spotify.";
+                SetPollInterval(IdlePollInterval);
+                TrackTitle.Text = "Nothing playing";
+                TrackArtist.Text = "Play something on any Spotify device.";
                 RenderLines("No active track", "", 0, 0);
                 return;
             }
+
+            SetPollInterval(track.IsPlaying ? ActivePollInterval : IdlePollInterval);
 
             var changed = _track?.Id != track.Id;
             var previousProgress = CurrentProgress();
             _track = track;
             SyncProgress(track, changed, previousProgress);
             TrackTitle.Text = track.Name;
-            TrackArtist.Text = track.Artist;
+            TrackArtist.Text = string.IsNullOrWhiteSpace(track.DeviceName) ? track.Artist : $"{track.Artist}  ·  on {track.DeviceName}";
 
             if (changed || _lyrics is null || _lyricsTrackId != track.Id)
             {
@@ -196,15 +224,31 @@ public partial class MainWindow : Window
                 RenderSyncedLyrics();
             }
         }
+        catch (RateLimitedException ex)
+        {
+            // Respect Retry-After: pause polling, then resume at the normal cadence.
+            SetPollInterval(ex.RetryAfter + TimeSpan.FromSeconds(1));
+            TrackArtist.Text = "Spotify asked us to slow down; resuming shortly...";
+        }
         catch (Exception ex)
         {
-            if (_track is null) RenderLines(ex.Message, "", 0, 0);
+            Log.Write("Playback poll failed.", ex);
+            if (_track is null) RenderLines("Can't reach Spotify; retrying...", "", 0, 0);
             else TrackArtist.Text = "Spotify unavailable; retrying...";
         }
         finally
         {
             _pollInFlight = false;
         }
+    }
+
+    // Poll faster while music plays (keeps lyrics in sync), slower when paused/idle (fewer API calls).
+    private static readonly TimeSpan ActivePollInterval = TimeSpan.FromMilliseconds(2500);
+    private static readonly TimeSpan IdlePollInterval = TimeSpan.FromSeconds(6);
+
+    private void SetPollInterval(TimeSpan interval)
+    {
+        if (_playerTimer.Interval != interval) _playerTimer.Interval = interval;
     }
 
     private void ResetPlaybackState()
@@ -405,7 +449,9 @@ public partial class MainWindow : Window
 
     private async void OnConnect(object sender, RoutedEventArgs e)
     {
-        SetupStatus.Text = "Opening Spotify authorization...";
+        var button = sender as System.Windows.Controls.Button;
+        if (button is not null) button.IsEnabled = false;
+        SetupStatus.Text = "Finish signing in to Spotify in your browser...";
         try
         {
             await _spotify.StartAuthAsync(ClientIdBox.Text.Trim());
@@ -415,7 +461,12 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            Log.Write("Spotify connect failed.", ex);
             SetupStatus.Text = ex.Message;
+        }
+        finally
+        {
+            if (button is not null) button.IsEnabled = true;
         }
     }
 

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
-namespace SpotifyLyricsOverlay.Wpf;
+namespace StarryDisplay;
 
 internal static class NativeMethods
 {

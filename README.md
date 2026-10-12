@@ -52,6 +52,13 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Clean recording mode (<kbd>H</kbd>): hides the dock, scrollbars and your name for footage.
 - Effects pause when Spotify is in the background; weather, dust and twinkle switch off on battery.
 
+## Windows display
+
+`windows/` holds **Starry Display**, a transparent, always-on-top lyrics overlay for the PC. It follows whatever Spotify is playing on any device (usually the iPhone) through the Web API with PKCE sign-in.
+It's built on [EvansLR/spotify-lyrics-overlay-wpf](https://github.com/EvansLR/spotify-lyrics-overlay-wpf) (MIT, WPF/.NET 10).
+See [windows/README.md](windows/README.md) to set it up, and [windows/BASEPLATE.md](windows/BASEPLATE.md) for what was evaluated, reused and changed.
+Spicetify ignores this folder, so cloning the repo into `~/.config/spicetify` is unaffected.
+
 ## Files
 
 | Path | What |

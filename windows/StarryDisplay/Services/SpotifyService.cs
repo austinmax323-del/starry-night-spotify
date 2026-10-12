@@ -5,21 +5,33 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using SpotifyLyricsOverlay.Wpf.Models;
+using StarryDisplay.Models;
 
-namespace SpotifyLyricsOverlay.Wpf.Services;
+namespace StarryDisplay.Services;
 
-public sealed class SpotifyService
+/// <summary>
+/// Spotify Web API access using Authorization Code + PKCE (no client secret anywhere).
+/// Reads playback from whichever device is active — normally the iPhone — so the PC
+/// never needs Spotify running locally.
+/// Adapted from EvansLR/spotify-lyrics-overlay-wpf (MIT); see windows/BASEPLATE.md.
+/// </summary>
+public sealed class SpotifyService : IPlaybackSource
 {
     private const string AuthUrl = "https://accounts.spotify.com/authorize";
     private const string TokenUrl = "https://accounts.spotify.com/api/token";
     private const string ApiUrl = "https://api.spotify.com/v1";
-    private const string RedirectUri = "http://127.0.0.1:8766/callback";
+    // Spotify requires a loopback IP literal (not "localhost") for http redirect URIs.
+    public const string RedirectUri = "http://127.0.0.1:8766/callback";
+    private const string ListenerPrefix = "http://127.0.0.1:8766/";
+    private const string TokenFile = "token.bin"; // DPAPI-encrypted
+    private static readonly TimeSpan AuthTimeout = TimeSpan.FromMinutes(3);
+
+    // Read-only scopes: this phase only displays playback. Add control scopes when a later phase needs them.
     private static readonly string[] Scopes = { "user-read-currently-playing", "user-read-playback-state" };
 
-    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(10) };
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
     private readonly SettingsStore _store;
-    private string _pkceVerifier = "";
+    private readonly SemaphoreSlim _tokenLock = new(1, 1);
 
     public SpotifyService(SettingsStore store)
     {
@@ -28,118 +40,178 @@ public sealed class SpotifyService
 
     public async Task<bool> HasTokenAsync()
     {
-        var token = await _store.ReadAsync<TokenInfo>("token.json");
-        return !string.IsNullOrWhiteSpace(token?.AccessToken);
+        var token = await _store.ReadSecretAsync<TokenInfo>(TokenFile);
+        return !string.IsNullOrWhiteSpace(token?.RefreshToken) || !string.IsNullOrWhiteSpace(token?.AccessToken);
     }
 
     public async Task StartAuthAsync(string clientId)
     {
+        clientId = clientId.Trim();
         if (string.IsNullOrWhiteSpace(clientId)) throw new InvalidOperationException("Client ID is required.");
 
         var settings = await _store.ReadSettingsAsync();
-        settings.ClientId = clientId.Trim();
+        settings.ClientId = clientId;
         await _store.WriteAsync("settings.json", settings);
 
-        _pkceVerifier = RandomString(96);
-        var challenge = Sha256Base64Url(_pkceVerifier);
+        var verifier = RandomString(96);
+        var state = RandomString(32);
+        var challenge = Sha256Base64Url(verifier);
+
         using var listener = new HttpListener();
-        listener.Prefixes.Add("http://127.0.0.1:8766/");
-        listener.Start();
+        listener.Prefixes.Add(ListenerPrefix);
+        try
+        {
+            listener.Start();
+        }
+        catch (HttpListenerException ex)
+        {
+            throw new InvalidOperationException("Port 8766 is busy, so Spotify can't call back. Close whatever is using it and try again.", ex);
+        }
 
         var query = new Dictionary<string, string>
         {
             ["response_type"] = "code",
-            ["client_id"] = clientId.Trim(),
+            ["client_id"] = clientId,
             ["scope"] = string.Join(' ', Scopes),
             ["redirect_uri"] = RedirectUri,
             ["code_challenge_method"] = "S256",
-            ["code_challenge"] = challenge
+            ["code_challenge"] = challenge,
+            ["state"] = state
         };
 
         OpenExternal($"{AuthUrl}?{ToForm(query)}");
 
-        var context = await listener.GetContextAsync();
-        if (context.Request.Url?.AbsolutePath != "/callback")
+        using var timeout = new CancellationTokenSource(AuthTimeout);
+        using var _ = timeout.Token.Register(() => { try { listener.Stop(); } catch { } });
+
+        while (true)
         {
-            await WriteBrowserResponse(context, 404, "Not found");
-            throw new InvalidOperationException("Unexpected authorization callback.");
+            HttpListenerContext context;
+            try
+            {
+                context = await listener.GetContextAsync();
+            }
+            catch (Exception) when (timeout.IsCancellationRequested)
+            {
+                throw new TimeoutException("Spotify sign-in timed out. Click Connect to try again.");
+            }
+
+            if (context.Request.Url?.AbsolutePath != "/callback")
+            {
+                await WriteBrowserResponse(context, 404, "Not found");
+                continue; // e.g. favicon requests; keep waiting for the real callback
+            }
+
+            var code = context.Request.QueryString["code"];
+            var error = context.Request.QueryString["error"];
+            var returnedState = context.Request.QueryString["state"];
+
+            if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(returnedState ?? ""), Encoding.ASCII.GetBytes(state)))
+            {
+                await WriteBrowserResponse(context, 400, "Sign-in response did not match this request. Try again from the app.");
+                throw new InvalidOperationException("Spotify sign-in state mismatch.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(error) || string.IsNullOrWhiteSpace(code))
+            {
+                await WriteBrowserResponse(context, 400, error ?? "Missing authorization code");
+                throw new InvalidOperationException(error == "access_denied" ? "Spotify access was declined." : error ?? "Missing authorization code");
+            }
+
+            await ExchangeCodeAsync(clientId, code, verifier);
+            await WriteBrowserResponse(context, 200, "Spotify connected. You can close this tab.");
+            Log.Write("Spotify connected.");
+            return;
         }
-
-        var code = context.Request.QueryString["code"];
-        var error = context.Request.QueryString["error"];
-
-        if (!string.IsNullOrWhiteSpace(error) || string.IsNullOrWhiteSpace(code))
-        {
-            await WriteBrowserResponse(context, 400, error ?? "Missing authorization code");
-            throw new InvalidOperationException(error ?? "Missing authorization code");
-        }
-
-        await ExchangeCodeAsync(clientId.Trim(), code);
-        await WriteBrowserResponse(context, 200, "Spotify connected. You can close this tab.");
     }
 
     public void Disconnect()
     {
-        _store.Delete("token.json");
+        _store.Delete(TokenFile);
+        Log.Write("Spotify disconnected by user.");
     }
 
-    public async Task<TrackInfo?> GetPlayerAsync()
+    public async Task<TrackInfo?> GetPlaybackAsync(CancellationToken cancellationToken = default)
     {
-        using var request = await CreateApiRequestAsync("/me/player");
-        if (request is null) return null;
+        using var response = await SendApiAsync("/me/player?additional_types=track", forceRefresh: false, cancellationToken);
+        if (response is null) return null;
 
-        using var response = await _http.SendAsync(request);
         if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound) return null;
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            _store.Delete("token.json");
-            return null;
+            var retry = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(30);
+            Log.Write($"Spotify 429; backing off {retry.TotalSeconds:0}s.");
+            throw new RateLimitedException(retry);
         }
 
         response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        using var doc = await JsonDocument.ParseAsync(stream);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         return NormalizeTrack(doc.RootElement);
     }
 
-    private async Task<HttpRequestMessage?> CreateApiRequestAsync(string path)
+    private async Task<HttpResponseMessage?> SendApiAsync(string path, bool forceRefresh, CancellationToken ct)
     {
-        var token = await GetValidTokenAsync();
+        var token = await GetValidTokenAsync(forceRefresh);
         if (token is null) return null;
 
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiUrl}{path}");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiUrl}{path}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-        return request;
-    }
+        var response = await Http.SendAsync(request, ct);
 
-    private async Task<TokenInfo?> GetValidTokenAsync()
-    {
-        var token = await _store.ReadAsync<TokenInfo>("token.json");
-        if (token is null) return null;
-        if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < token.ExpiresAt - 60_000) return token;
-
-        var settings = await _store.ReadSettingsAsync();
-        if (string.IsNullOrWhiteSpace(settings.ClientId) || string.IsNullOrWhiteSpace(token.RefreshToken)) return null;
-
-        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            ["grant_type"] = "refresh_token",
-            ["refresh_token"] = token.RefreshToken,
-            ["client_id"] = settings.ClientId
-        });
-
-        using var response = await _http.PostAsync(TokenUrl, content);
-        if (!response.IsSuccessStatusCode)
-        {
-            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized) _store.Delete("token.json");
+            response.Dispose();
+            if (!forceRefresh) return await SendApiAsync(path, forceRefresh: true, ct); // access token revoked early: refresh once
+            Log.Write("Spotify rejected a freshly refreshed token; signing out.");
+            _store.Delete(TokenFile);
             return null;
         }
 
-        await StoreTokenAsync(response, token.RefreshToken);
-        return await _store.ReadAsync<TokenInfo>("token.json");
+        return response;
     }
 
-    private async Task ExchangeCodeAsync(string clientId, string code)
+    private async Task<TokenInfo?> GetValidTokenAsync(bool forceRefresh)
+    {
+        await _tokenLock.WaitAsync();
+        try
+        {
+            var token = await _store.ReadSecretAsync<TokenInfo>(TokenFile);
+            if (token is null) return null;
+            if (!forceRefresh && DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() < token.ExpiresAt - 60_000) return token;
+
+            var settings = await _store.ReadSettingsAsync();
+            if (string.IsNullOrWhiteSpace(settings.ClientId) || string.IsNullOrWhiteSpace(token.RefreshToken)) return null;
+
+            using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = token.RefreshToken,
+                ["client_id"] = settings.ClientId
+            });
+
+            using var response = await Http.PostAsync(TokenUrl, content);
+            if (!response.IsSuccessStatusCode)
+            {
+                // 400 invalid_grant = refresh token revoked/expired: the user must reconnect.
+                // Anything else (5xx, network) is transient: keep the token and retry next poll.
+                if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
+                {
+                    Log.Write($"Token refresh rejected ({(int)response.StatusCode}); signing out.");
+                    _store.Delete(TokenFile);
+                }
+                return null;
+            }
+
+            return await StoreTokenAsync(response, token.RefreshToken);
+        }
+        finally
+        {
+            _tokenLock.Release();
+        }
+    }
+
+    private async Task ExchangeCodeAsync(string clientId, string code, string verifier)
     {
         using var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -147,31 +219,37 @@ public sealed class SpotifyService
             ["code"] = code,
             ["redirect_uri"] = RedirectUri,
             ["client_id"] = clientId,
-            ["code_verifier"] = _pkceVerifier
+            ["code_verifier"] = verifier
         });
 
-        using var response = await _http.PostAsync(TokenUrl, content);
-        response.EnsureSuccessStatusCode();
+        using var response = await Http.PostAsync(TokenUrl, content);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Spotify token exchange failed ({(int)response.StatusCode}). Check the Client ID and that the Redirect URI is exactly {RedirectUri}");
+        }
         await StoreTokenAsync(response, "");
     }
 
-    private async Task StoreTokenAsync(HttpResponseMessage response, string previousRefreshToken)
+    private async Task<TokenInfo> StoreTokenAsync(HttpResponseMessage response, string previousRefreshToken)
     {
         await using var stream = await response.Content.ReadAsStreamAsync();
         using var doc = await JsonDocument.ParseAsync(stream);
         var root = doc.RootElement;
         var accessToken = root.GetProperty("access_token").GetString() ?? "";
+        // Spotify may rotate refresh tokens; keep the old one only if no new one was issued.
         var refreshToken = root.TryGetProperty("refresh_token", out var refresh)
             ? refresh.GetString() ?? previousRefreshToken
             : previousRefreshToken;
         var expiresIn = root.TryGetProperty("expires_in", out var expires) ? expires.GetInt32() : 3600;
 
-        await _store.WriteAsync("token.json", new TokenInfo
+        var token = new TokenInfo
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn).ToUnixTimeMilliseconds()
-        });
+        };
+        await _store.WriteSecretAsync(TokenFile, token);
+        return token;
     }
 
     private static TrackInfo? NormalizeTrack(JsonElement player)
@@ -184,15 +262,30 @@ public sealed class SpotifyService
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToList();
 
+        string? deviceName = null;
+        if (player.TryGetProperty("device", out var device) && device.ValueKind == JsonValueKind.Object &&
+            device.TryGetProperty("name", out var dn)) deviceName = dn.GetString();
+
+        string? artUrl = null;
+        var album = item.GetProperty("album");
+        if (album.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array)
+        {
+            artUrl = images.EnumerateArray()
+                .Select(i => i.TryGetProperty("url", out var u) ? u.GetString() : null)
+                .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u));
+        }
+
         return new TrackInfo(
-            item.GetProperty("id").GetString() ?? "",
+            item.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "",
             item.GetProperty("name").GetString() ?? "",
             string.Join(", ", artists),
             artists.FirstOrDefault() ?? "",
-            item.GetProperty("album").GetProperty("name").GetString() ?? "",
+            album.GetProperty("name").GetString() ?? "",
             item.GetProperty("duration_ms").GetInt32(),
-            player.TryGetProperty("progress_ms", out var progress) && progress.ValueKind != JsonValueKind.Null ? progress.GetInt32() : 0,
-            player.TryGetProperty("is_playing", out var playing) && playing.GetBoolean());
+            player.TryGetProperty("progress_ms", out var progress) && progress.ValueKind == JsonValueKind.Number ? progress.GetInt32() : 0,
+            player.TryGetProperty("is_playing", out var playing) && playing.ValueKind == JsonValueKind.True,
+            deviceName,
+            artUrl);
     }
 
     private static string RandomString(int length)
@@ -222,7 +315,7 @@ public sealed class SpotifyService
 
     private static async Task WriteBrowserResponse(HttpListenerContext context, int status, string text)
     {
-        var bytes = Encoding.UTF8.GetBytes($"<!doctype html><meta charset=\"utf-8\"><body>{WebUtility.HtmlEncode(text)}</body>");
+        var bytes = Encoding.UTF8.GetBytes($"<!doctype html><meta charset=\"utf-8\"><title>Starry Display</title><body style=\"font:16px system-ui;background:#0b0f1a;color:#eef\">{WebUtility.HtmlEncode(text)}</body>");
         context.Response.StatusCode = status;
         context.Response.ContentType = "text/html; charset=utf-8";
         context.Response.ContentLength64 = bytes.Length;

@@ -2,9 +2,9 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using SpotifyLyricsOverlay.Wpf.Models;
+using StarryDisplay.Models;
 
-namespace SpotifyLyricsOverlay.Wpf.Services;
+namespace StarryDisplay.Services;
 
 public sealed class LyricsService
 {
@@ -12,7 +12,8 @@ public sealed class LyricsService
     private static readonly TimeSpan LyricsTtl = TimeSpan.FromDays(30);
     private static readonly TimeSpan MissingTtl = TimeSpan.FromHours(6);
 
-    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(10) };
+    // LRCLIB asks clients to identify themselves with a User-Agent.
+    private static readonly HttpClient Http = CreateClient();
     private readonly SettingsStore _store;
 
     public LyricsService(SettingsStore store)
@@ -36,7 +37,15 @@ public sealed class LyricsService
         };
         if (!string.IsNullOrWhiteSpace(track.Album)) query["album_name"] = track.Album;
 
-        using var response = await _http.GetAsync($"https://lrclib.net/api/get?{ToForm(query)}");
+        var response = await Http.GetAsync($"https://lrclib.net/api/get?{ToForm(query)}");
+        if (response.StatusCode == HttpStatusCode.NotFound && query.Remove("album_name"))
+        {
+            // Spotify album names ("... (Deluxe Edition)") often differ from LRCLIB's; retry on title/artist/duration.
+            response.Dispose();
+            response = await Http.GetAsync($"https://lrclib.net/api/get?{ToForm(query)}");
+        }
+
+        using var _ = response;
         if (!response.IsSuccessStatusCode)
         {
             var missing = new LyricsResult();
@@ -72,6 +81,13 @@ public sealed class LyricsService
 
         await CacheAsync(cache, track.Id, result, result.Source == "none" ? MissingTtl : LyricsTtl);
         return result;
+    }
+
+    private static HttpClient CreateClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("StarryDisplay/0.1 (+https://github.com/austinmax323-del/starry-night-spotify)");
+        return client;
     }
 
     private async Task CacheAsync(Dictionary<string, CacheEntry> cache, string trackId, LyricsResult result, TimeSpan ttl)

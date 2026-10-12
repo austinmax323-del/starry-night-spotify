@@ -5,3 +5,9 @@ Themes/*
 *.bak-*
 .DS_Store
 font-preview.html
+# Windows display build output
+windows/**/bin/
+windows/**/obj/
+windows/dist/
+.vs/
+*.user

@@ -1,5 +1,7 @@
-namespace SpotifyLyricsOverlay.Wpf.Models;
+namespace StarryDisplay.Models;
 
+// DeviceName / AlbumArtUrl added for the multi-device setup: playback normally
+// happens on the iPhone, so the PC shows *where* it is playing.
 public sealed record TrackInfo(
     string Id,
     string Name,
@@ -8,7 +10,9 @@ public sealed record TrackInfo(
     string Album,
     int DurationMs,
     int ProgressMs,
-    bool IsPlaying);
+    bool IsPlaying,
+    string? DeviceName = null,
+    string? AlbumArtUrl = null);
 
 public sealed record LyricLine(int Time, string Text);
 
@@ -21,6 +25,8 @@ public sealed class LyricsResult
 
 public sealed class AppSettings
 {
+    // A Spotify Client ID is public by design under PKCE (no client secret exists),
+    // so it lives in plain settings. Tokens do not — see SettingsStore.WriteSecretAsync.
     public string ClientId { get; set; } = "";
     public string LineMode { get; set; } = "two";
     public double FontSize { get; set; } = 38;
@@ -32,4 +38,10 @@ public sealed class TokenInfo
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";
     public long ExpiresAt { get; set; }
+}
+
+/// <summary>Thrown when Spotify answers 429; the poller waits RetryAfter before trying again.</summary>
+public sealed class RateLimitedException(TimeSpan retryAfter) : Exception($"Spotify rate limit; retrying in {retryAfter.TotalSeconds:0}s")
+{
+    public TimeSpan RetryAfter { get; } = retryAfter;
 }

@@ -1,0 +1,32 @@
+using System.IO;
+
+namespace StarryDisplay.Services;
+
+/// <summary>Tiny append-only log in the data folder. Never pass tokens or auth codes here.</summary>
+public static class Log
+{
+    private static readonly object Gate = new();
+    private const long MaxBytes = 512 * 1024;
+
+    public static string FilePath => Path.Combine(SettingsStore.DefaultDirectory, "app.log");
+
+    public static void Write(string message, Exception? ex = null)
+    {
+        try
+        {
+            lock (Gate)
+            {
+                Directory.CreateDirectory(SettingsStore.DefaultDirectory);
+                var info = new FileInfo(FilePath);
+                if (info.Exists && info.Length > MaxBytes) File.Move(FilePath, FilePath + ".1", overwrite: true);
+                var line = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff} {message}";
+                if (ex is not null) line += $" | {ex.GetType().Name}: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
+                File.AppendAllText(FilePath, line + Environment.NewLine);
+            }
+        }
+        catch
+        {
+            // Logging must never take the app down.
+        }
+    }
+}
