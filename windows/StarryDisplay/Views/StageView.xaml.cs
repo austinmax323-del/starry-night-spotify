@@ -84,6 +84,27 @@ public partial class StageView : UserControl, IComposition
         _settings = settings;
         _lyrics.FontScale = settings.LyricsScale;
         BackdropLayer.Visibility = settings.ArtworkBackdrop ? Visibility.Visible : Visibility.Collapsed;
+        BaseFill.Fill = SkyBrush(settings) ?? (Brush)FindResource("NightBrush");
+    }
+
+    /// <summary>
+    /// Card background from a theme's sky colours (the Mac's Starry Night scheme), blended a quarter
+    /// toward the night base so light schemes stay legible under white text.
+    /// </summary>
+    private static Brush? SkyBrush(AppSettings s)
+    {
+        var top = Link.LinkProtocol.NormalizeColor(s.SkyTop);
+        var bottom = Link.LinkProtocol.NormalizeColor(s.SkyBottom);
+        if (top is null || bottom is null) return null;
+        var night = Color.FromRgb(0x0A, 0x0D, 0x18);
+        Color Mix(string hex)
+        {
+            var c = (Color)ColorConverter.ConvertFromString(hex);
+            return Color.FromRgb((byte)(c.R * 0.75 + night.R * 0.25), (byte)(c.G * 0.75 + night.G * 0.25), (byte)(c.B * 0.75 + night.B * 0.25));
+        }
+        var brush = new LinearGradientBrush(Mix(top), Mix(bottom), new Point(0, 0), new Point(0, 1));
+        brush.Freeze();
+        return brush;
     }
 
     // ---- events -------------------------------------------------------------------------

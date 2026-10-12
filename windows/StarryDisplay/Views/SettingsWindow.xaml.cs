@@ -2,7 +2,10 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Controls;
+using System.Windows.Threading;
 using StarryDisplay.Core;
+using StarryDisplay.Link;
 using StarryDisplay.Services;
 
 namespace StarryDisplay.Views;
@@ -38,6 +41,128 @@ public partial class SettingsWindow : Window
     }
 
     private string DataDirectory { get; }
+
+    // ---- Mac link ---------------------------------------------------------------------------
+
+    private Func<LinkServer?>? _link;
+    private Func<bool, Task>? _setLinkEnabled;
+    private Func<ContextState?>? _context;
+    private readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private bool? _firewallOk;
+
+    /// <summary>Connects the Mac link section. Kept separate so the window has no link dependency otherwise.</summary>
+    public void AttachLink(Func<LinkServer?> link, Func<bool, Task> setEnabled, Func<ContextState?> context)
+    {
+        _link = link;
+        _setLinkEnabled = setEnabled;
+        _context = context;
+        _linkTimer.Tick += (_, _) => RefreshLink();
+        _linkTimer.Start();
+        Closed += (_, _) => _linkTimer.Stop();
+        _ = Task.Run(() => { var ok = LinkFirewall.RuleExists(); Dispatcher.BeginInvoke(() => { _firewallOk = ok; RefreshLink(); }); });
+        RefreshLink();
+    }
+
+    private void RefreshLink()
+    {
+        var server = _link?.Invoke();
+        var s = server?.Status;
+        var enabled = _settings.LinkEnabled;
+        _loading = true;
+        LinkBox.IsChecked = enabled;
+        _loading = false;
+        LinkDetails.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+
+        var host = Environment.MachineName.ToLowerInvariant() + ".local";
+        LinkStatusText.Text = !enabled
+            ? "Off. When on, a paired Mac can change the layout, visibility, overlay and theme. Spotify sign-in never leaves this PC."
+            : s is null || !s.Running
+                ? $"Not running. {s?.Error}"
+                : $"Listening on {string.Join(", ", s.Endpoints.Where(e => !e.StartsWith("127.")))} · reach it from the Mac as {host}"
+                  + (s.Error is null ? "" : $" · {s.Error}")
+                  + (s.EventClients > 0 ? $" · {s.EventClients} live connection{(s.EventClients == 1 ? "" : "s")}" : "");
+
+        if (s?.PairingCode is { } code && s.PairingExpires is { } exp)
+        {
+            PairPanel.Visibility = Visibility.Visible;
+            PairCommand.Text = $"starry pair {host} {code}";
+            var left = exp - DateTimeOffset.UtcNow;
+            PairCountdown.Text = left > TimeSpan.Zero ? $"Code {code} · expires in {(int)left.TotalMinutes}:{left.Seconds:00}" : "Expired";
+        }
+        else PairPanel.Visibility = Visibility.Collapsed;
+
+        FirewallText.Text = _firewallOk switch
+        {
+            true => "Firewall: rule in place (this app, this port, local subnet and Tailscale only).",
+            false => "Firewall: no rule yet. Your Wi-Fi is treated as Public, so the Mac can't connect until you allow it. If Portmaster is installed, allow incoming LAN connections for Starry Display there too.",
+            _ => "Firewall: checking…"
+        };
+
+        DeviceList.Children.Clear();
+        var devices = s?.Devices ?? Array.Empty<PairedDevice>();
+        if (devices.Count == 0)
+            DeviceList.Children.Add(new TextBlock { Text = "No Macs paired yet.", Style = (Style)FindResource("Hint") });
+        foreach (var d in devices)
+        {
+            var row = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+            var forget = new Button { Content = "Forget", Style = (Style)FindResource("PillButton"), Height = 28, Padding = new Thickness(12, 0, 12, 0) };
+            forget.Click += async (_, _) => { if (_link?.Invoke() is { } l) await l.ForgetAsync(d.KeyId); RefreshLink(); };
+            DockPanel.SetDock(forget, Dock.Right);
+            row.Children.Add(forget);
+            var seen = d.LastSeen is { } t ? $"last seen {Ago(t)}" : "not seen since pairing";
+            row.Children.Add(new TextBlock { Text = $"{d.Name}  ·  {seen}", Style = (Style)FindResource("Label"), VerticalAlignment = VerticalAlignment.Center });
+            DeviceList.Children.Add(row);
+        }
+
+        var ctx = _context?.Invoke();
+        ContextText.Text = ctx is null ? "" :
+            $"Mac context ({ctx.Source}, expires {ctx.ExpiresAt.ToLocalTime():HH:mm}): " +
+            string.Join(", ", ctx.Data.Take(6).Select(kv => $"{kv.Key}={kv.Value}"));
+        ActivityText.Text = s is null || s.Recent.Count == 0 ? "Nothing yet." :
+            string.Join("\n", s.Recent.Take(8).Select(a => $"{a.At:HH:mm:ss}  {a.Status}  {a.Method,-5} {a.Path,-14} {a.Peer}  {a.Note}"));
+    }
+
+    private static string Ago(DateTimeOffset t)
+    {
+        var d = DateTimeOffset.UtcNow - t;
+        return d.TotalSeconds < 60 ? "just now" : d.TotalMinutes < 60 ? $"{(int)d.TotalMinutes} min ago" : d.TotalHours < 24 ? $"{(int)d.TotalHours} h ago" : t.ToLocalTime().ToString("MMM d");
+    }
+
+    private async void OnLinkToggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading || _setLinkEnabled is null) return;
+        LinkBox.IsEnabled = false;
+        try { await _setLinkEnabled(LinkBox.IsChecked == true); }
+        finally { LinkBox.IsEnabled = true; RefreshLink(); }
+    }
+
+    private void OnPair(object sender, RoutedEventArgs e)
+    {
+        _link?.Invoke()?.BeginPairing();
+        RefreshLink();
+    }
+
+    private void OnCancelPairing(object sender, RoutedEventArgs e)
+    {
+        _link?.Invoke()?.CancelPairing();
+        RefreshLink();
+    }
+
+    private async void OnFirewall(object sender, RoutedEventArgs e)
+    {
+        FirewallButton.IsEnabled = false;
+        FirewallText.Text = "Waiting for the Windows permission prompt…";
+        try
+        {
+            await LinkFirewall.CreateRuleAsync(_settings.LinkPort);
+            _firewallOk = await Task.Run(LinkFirewall.RuleExists);
+        }
+        finally
+        {
+            FirewallButton.IsEnabled = true;
+            RefreshLink();
+        }
+    }
 
     public void RefreshAccount()
     {

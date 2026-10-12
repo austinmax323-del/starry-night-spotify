@@ -89,7 +89,16 @@ public partial class App : System.Windows.Application
         if (_connected) _controller.SignedIn();
         else _controller.SignedOut("");
         ShowLayout(_settings.Layout);
+        await InitLinkAsync();
         UpdateTray();
+
+        // --pair: turn the link on and open Settings with a fresh pairing code.
+        if (e.Args.Contains("--pair", StringComparer.OrdinalIgnoreCase) && !_demo)
+        {
+            if (!_settings.LinkEnabled) await SetLinkEnabledAsync(true);
+            OpenSettings();
+            _link?.BeginPairing();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -279,6 +288,7 @@ public partial class App : System.Windows.Application
             _window!.Activate();
             _settingsWindow?.RefreshAccount();
         };
+        _settingsWindow.AttachLink(() => _link, SetLinkEnabledAsync, GetContext);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
     }
@@ -286,6 +296,7 @@ public partial class App : System.Windows.Application
     private async Task QuitAsync()
     {
         await SaveAsync();
+        await StopLinkAsync();
         _tray.Dispose();
         _settingsWindow?.Close();
         _window!.CloseForReal();
@@ -339,8 +350,11 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private void UpdateTray() =>
+    private void UpdateTray()
+    {
         _tray?.Update(_window!.IsVisible, _settings.Layout, _settings.AlwaysOnTop, _window!.IsLocked, _controller.IsPausedByUser);
+        PublishDisplay(); // tell a connected Mac about any change, whatever its source
+    }
 
     private void UpdateTooltip()
     {

@@ -11,7 +11,7 @@
     <RootNamespace>StarryDisplay</RootNamespace>
     <AssemblyName>StarryDisplay</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>Starry Display</Product>
     <!-- A light, long-running UI app: workstation GC without the background GC thread. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
@@ -20,6 +20,10 @@
     <!-- Keep WinForms/System.Drawing out of global usings so WPF types (Color, Image, Application…) stay unambiguous. -->
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Kestrel for the Mac link (ships with the .NET runtime; nothing extra to install). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" />

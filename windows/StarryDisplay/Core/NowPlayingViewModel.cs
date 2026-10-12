@@ -41,7 +41,18 @@ public sealed class NowPlayingViewModel : INotifyPropertyChanged
     public string Album => _item.Album;
     public bool IsPlaying => _state == DisplayState.Playing || (_state == DisplayState.Ad && _item.IsPlaying);
     public bool HasItem => _item.HasItem || _item.Kind == PlaybackKind.Ad;
-    public Color Accent => _artwork?.Accent ?? ArtworkService.DefaultAccent;
+    public Color Accent => _accentOverride ?? _artwork?.Accent ?? ArtworkService.DefaultAccent;
+
+    private Color? _accentOverride;
+
+    /// <summary>Theme accent from the Mac/settings; null = follow the artwork. Re-raises ArtworkChanged so views recolour.</summary>
+    internal void SetAccentOverride(Color? accent)
+    {
+        if (_accentOverride == accent) return;
+        _accentOverride = accent;
+        Raise(nameof(Accent));
+        ArtworkChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public string DeviceName => _deviceName;
     public string DeviceGlyph => DeviceGlyphFor(_item.DeviceType);

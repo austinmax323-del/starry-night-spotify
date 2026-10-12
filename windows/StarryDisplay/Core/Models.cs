@@ -66,6 +66,19 @@ public sealed class AppSettings
     public bool ArtworkBackdrop { get; set; } = true;
     public bool StartWithWindows { get; set; }
 
+    // Theme set from the Mac (or later, a picker). Null = default behaviour.
+    /// <summary>Name of the Mac's Starry Night colour scheme, informational.</summary>
+    public string? ThemeScheme { get; set; }
+    /// <summary>"#RRGGBB" overriding the artwork accent.</summary>
+    public string? AccentOverride { get; set; }
+    /// <summary>Card background tint, top and bottom ("#RRGGBB").</summary>
+    public string? SkyTop { get; set; }
+    public string? SkyBottom { get; set; }
+
+    /// <summary>Mac link server (off until enabled in Settings).</summary>
+    public bool LinkEnabled { get; set; }
+    public int LinkPort { get; set; } = Link.LinkProtocol.DefaultPort;
+
     public WindowBounds? StageBounds { get; set; }
     public WindowBounds? StripBounds { get; set; }
 }

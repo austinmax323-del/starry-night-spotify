@@ -1,0 +1,434 @@
+#!/usr/bin/env python3
+"""starry - control Starry Display (the Windows Spotify display) from this Mac.
+
+Talks to the display over the local network using the small HTTP/JSON protocol in
+protocol/PROTOCOL.md. Python 3 standard library only (works with the python3 that ships
+with Xcode's command line tools). Nothing runs in the background: each command is one request,
+except `starry watch`, which keeps a live event stream open and reconnects on its own.
+
+  starry pair zxcvbn.local ABCD-EFGH     pair once (code from Settings > Mac link > Pair a Mac)
+  starry status                         what the display is doing
+  starry layout stage|strip
+  starry show | hide
+  starry top on|off                     always on top
+  starry clickthrough on|off            clicks pass through the strip (gaming)
+  starry mode live|paused               follow Spotify / pause updates
+  starry lyrics 1.2                     lyric size (0.7 - 1.6)
+  starry glow on|off                    artwork glow behind the card
+  starry accent '#FF88AA' | auto        accent colour (auto = from the artwork)
+  starry theme galaxy | auto            send a Starry Night colour scheme (accent + sky) to the PC
+  starry context focus=coding song=on [--ttl 600]   free-form hints (expire on their own)
+  starry context --clear
+  starry watch                          live events; reconnects after sleep / restarts
+  starry raw PATCH /v1/display '{"layout":"strip"}'
+  starry unpair
+
+The pairing key lives in the macOS Keychain (service "starry-display"). No Spotify credentials
+are involved: the display signs in to Spotify itself.
+"""
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import os
+import re
+import secrets
+import shutil
+import socket
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+PROTOCOL = 1
+DEFAULT_PORT = 47836
+CONFIG_DIR = Path(os.environ.get("STARRY_CONFIG_DIR", Path.home() / ".config" / "starry-display"))
+CONFIG_FILE = CONFIG_DIR / "config.json"
+KEYCHAIN_SERVICE = "starry-display"
+COLOR_INI = Path.home() / ".config" / "spicetify" / "Themes" / "StarryNight" / "color.ini"
+QUIET = False
+
+
+class StarryError(Exception):
+    pass
+
+
+# ---- config & key storage -----------------------------------------------------------------
+
+def load_config() -> dict:
+    if not CONFIG_FILE.exists():
+        raise StarryError("Not paired yet. On the PC: Settings > Mac link > Pair a Mac, then run the command it shows.")
+    return json.loads(CONFIG_FILE.read_text())
+
+
+def save_config(cfg: dict) -> None:
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(json.dumps(cfg, indent=2) + "\n")
+
+
+def use_keychain() -> bool:
+    return sys.platform == "darwin" and shutil.which("security") is not None and os.environ.get("STARRY_KEYSTORE") != "file"
+
+
+def store_key(key_id: str, key: bytes) -> None:
+    value = key.hex()
+    if use_keychain():
+        subprocess.run(["security", "add-generic-password", "-U", "-s", KEYCHAIN_SERVICE, "-a", key_id,
+                        "-l", "Starry Display link key", "-w", value], check=True, capture_output=True)
+    else:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        path = CONFIG_DIR / f"key-{key_id}"
+        path.write_text(value)
+        path.chmod(0o600)
+
+
+def read_key(key_id: str) -> bytes:
+    if use_keychain():
+        r = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", key_id, "-w"],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise StarryError("Pairing key not found in the Keychain; pair again.")
+        return bytes.fromhex(r.stdout.strip())
+    path = CONFIG_DIR / f"key-{key_id}"
+    if not path.exists():
+        raise StarryError("Pairing key file missing; pair again.")
+    return bytes.fromhex(path.read_text().strip())
+
+
+def delete_key(key_id: str) -> None:
+    if use_keychain():
+        subprocess.run(["security", "delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", key_id], capture_output=True)
+    else:
+        (CONFIG_DIR / f"key-{key_id}").unlink(missing_ok=True)
+
+
+# ---- HTTP ---------------------------------------------------------------------------------
+
+def base_url(cfg: dict) -> str:
+    host = os.environ.get("STARRY_HOST") or cfg["host"]
+    return f"http://{host}:{cfg.get('port', DEFAULT_PORT)}"
+
+
+def sign(key: bytes, method: str, path: str, t: int, nonce: str, body: bytes) -> str:
+    canonical = f"{method.upper()}\n{path}\n{t}\n{nonce}\n{hashlib.sha256(body).hexdigest()}"
+    return hmac.new(key, canonical.encode(), hashlib.sha256).hexdigest()
+
+
+_clock_offset = 0
+
+
+def request(cfg: dict | None, method: str, path: str, payload=None, *, signed=True, base=None, timeout=6.0, stream=False):
+    """One HTTP request. Returns parsed JSON (or the raw response when stream=True)."""
+    global _clock_offset
+    url = (base or base_url(cfg)) + path
+    body = b"" if payload is None else json.dumps(payload, separators=(",", ":")).encode()
+    for attempt in (1, 2):
+        headers = {"Accept": "text/event-stream" if stream else "application/json", "User-Agent": "starry-mac/1"}
+        if payload is not None:
+            headers["Content-Type"] = "application/json"
+        if signed:
+            key = read_key(cfg["keyId"])
+            t = int(time.time()) + _clock_offset
+            nonce = secrets.token_hex(12)
+            headers.update({"X-Starry-Key": cfg["keyId"], "X-Starry-Time": str(t), "X-Starry-Nonce": nonce,
+                            "X-Starry-Signature": sign(key, method, path, t, nonce, body)})
+        req = urllib.request.Request(url, data=body if payload is not None else None, method=method, headers=headers)
+        try:
+            resp = urllib.request.urlopen(req, timeout=timeout)
+            if stream:
+                return resp
+            data = resp.read()
+            return json.loads(data) if data else None
+        except urllib.error.HTTPError as e:
+            raw = e.read()
+            try:
+                err = json.loads(raw)
+            except ValueError:
+                err = {"error": raw.decode(errors="replace") or e.reason}
+            server_time = e.headers.get("X-Starry-Server-Time")
+            if e.code == 401 and "skew" in str(err.get("error", "")) and server_time and attempt == 1:
+                _clock_offset = int(server_time) - int(time.time())  # clocks disagree; correct and retry once
+                continue
+            detail = "; ".join(err.get("details") or [])
+            raise StarryError(f"{e.code}: {err.get('error')}" + (f" ({detail})" if detail else ""))
+        except (urllib.error.URLError, socket.timeout, ConnectionError) as e:
+            reason = getattr(e, "reason", e)
+            raise StarryError(f"Can't reach the display at {url.split('/v1')[0]}: {reason}. "
+                              "Is the PC awake, Starry Display running with Mac link on, and the firewall rule allowed?")
+
+
+# ---- pairing ------------------------------------------------------------------------------
+
+ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+
+
+def normalize_code(code: str) -> str:
+    out = []
+    for ch in code.upper():
+        ch = {"I": "1", "L": "1", "O": "0", "U": "V"}.get(ch, ch)
+        if ch in ALPHABET:
+            out.append(ch)
+    return "".join(out)
+
+
+def cmd_pair(args):
+    if len(args) < 2:
+        raise StarryError("usage: starry pair HOST CODE [--port N] [--name NAME]")
+    host, code = args[0], normalize_code(args[1])
+    port = int(opt(args, "--port", DEFAULT_PORT))
+    name = opt(args, "--name", socket.gethostname().split(".")[0])
+    if len(code) != 8:
+        raise StarryError("The pairing code has 8 letters/digits, like ABCD-EFGH.")
+    base = f"http://{host}:{port}"
+
+    health = request(None, "GET", "/v1/health", signed=False, base=base)
+    if health.get("protocol") != PROTOCOL:
+        raise StarryError(f"Display speaks protocol {health.get('protocol')}, this tool speaks {PROTOCOL}.")
+    start = request(None, "POST", "/v1/pair/start", {"client": name}, signed=False, base=base)
+    pair_id, salt, iterations = start["pairId"], bytes.fromhex(start["salt"]), int(start["iterations"])
+    k = hashlib.pbkdf2_hmac("sha256", code.encode("ascii"), salt, iterations, 32)
+    proof = hmac.new(k, f"starry-pair-proof\n{pair_id}".encode(), hashlib.sha256).hexdigest()
+    done = request(None, "POST", "/v1/pair/finish", {"pairId": pair_id, "proof": proof}, signed=False, base=base)
+
+    box = done["box"]
+    tag = hmac.new(k, f"starry-pair-tag\n{pair_id}\n{box}".encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(tag, done["tag"]):
+        raise StarryError("Pairing response failed its integrity check (wrong display or tampering). Try again.")
+    stream = hmac.new(k, f"starry-pair-box\n{pair_id}".encode(), hashlib.sha256).digest()
+    key = bytes(a ^ b for a, b in zip(bytes.fromhex(box), stream))
+
+    try:
+        old = load_config()
+        delete_key(old["keyId"])
+    except (StarryError, KeyError, ValueError):
+        pass
+    store_key(done["keyId"], key)
+    save_config({"host": host, "port": port, "keyId": done["keyId"], "display": done.get("name"), "name": name})
+    say(f"Paired with {done.get('name', host)} as \"{name}\". Key stored {'in the Keychain' if use_keychain() else 'in ' + str(CONFIG_DIR)}.")
+    cmd_status([])
+
+
+def cmd_unpair(_args):
+    cfg = load_config()
+    delete_key(cfg["keyId"])
+    CONFIG_FILE.unlink()
+    say("Forgot the pairing on this Mac. (Remove it on the PC too: Settings > Mac link > Forget.)")
+
+
+# ---- display commands ---------------------------------------------------------------------
+
+def patch(payload: dict):
+    cfg = load_config()
+    state = request(cfg, "PATCH", "/v1/display", payload)
+    say(describe_display(state))
+
+
+def on_off(v: str) -> bool:
+    if v.lower() in ("on", "true", "yes", "1"):
+        return True
+    if v.lower() in ("off", "false", "no", "0"):
+        return False
+    raise StarryError(f"expected on/off, got {v!r}")
+
+
+def need(args, n, usage):
+    if len(args) < n:
+        raise StarryError("usage: " + usage)
+
+
+def cmd_layout(a): need(a, 1, "starry layout stage|strip"); patch({"layout": a[0]})
+def cmd_show(_a): patch({"visible": True})
+def cmd_hide(_a): patch({"visible": False})
+def cmd_top(a): need(a, 1, "starry top on|off"); patch({"overlay": {"alwaysOnTop": on_off(a[0])}})
+def cmd_clickthrough(a): need(a, 1, "starry clickthrough on|off"); patch({"overlay": {"clickThrough": on_off(a[0])}})
+def cmd_mode(a): need(a, 1, "starry mode live|paused"); patch({"mode": a[0]})
+def cmd_lyrics(a): need(a, 1, "starry lyrics 0.7-1.6"); patch({"theme": {"lyricsScale": float(a[0])}})
+def cmd_glow(a): need(a, 1, "starry glow on|off"); patch({"theme": {"artworkGlow": on_off(a[0])}})
+def cmd_accent(a): need(a, 1, "starry accent '#RRGGBB'|auto"); patch({"theme": {"accent": a[0]}})
+
+
+def read_scheme(name: str, ini: Path) -> dict:
+    if not ini.exists():
+        raise StarryError(f"{ini} not found (pass --file path/to/color.ini).")
+    section, found = None, {}
+    for line in ini.read_text().splitlines():
+        line = line.split(";", 1)[0].strip()
+        m = re.match(r"^\[(.+)\]$", line)
+        if m:
+            section = m.group(1)
+            continue
+        if section and section.lower() == name.lower() and "=" in line:
+            k, v = (s.strip() for s in line.split("=", 1))
+            found[k] = v
+    if not found:
+        names = [m.group(1) for m in re.finditer(r"^\[(.+)\]", ini.read_text(), re.M)]
+        raise StarryError(f"No scheme {name!r} in {ini}. Available: {', '.join(names)}")
+    return found
+
+
+def cmd_theme(a):
+    need(a, 1, "starry theme SCHEME|auto [--file color.ini]")
+    if a[0] == "auto":
+        return patch({"theme": {"scheme": "", "accent": "auto", "sky": "auto"}})
+    ini = Path(opt(a, "--file", COLOR_INI)).expanduser()
+    s = read_scheme(a[0], ini)
+    accent = s.get("button") or s.get("button-active") or s.get("star")
+    top, bottom = s.get("sidebar-alt"), s.get("sidebar")
+    theme = {"scheme": a[0]}
+    if accent:
+        theme["accent"] = "#" + accent
+    if top and bottom:
+        theme["sky"] = ["#" + top, "#" + bottom]
+    patch({"theme": theme})
+
+
+def cmd_context(a):
+    cfg = load_config()
+    if "--clear" in a:
+        request(cfg, "DELETE", "/v1/context")
+        return say("Context cleared.")
+    ttl = int(opt(a, "--ttl", 600))
+    data = {}
+    for item in [x for x in a if "=" in x and not x.startswith("--")]:
+        k, v = item.split("=", 1)
+        try:
+            data[k] = json.loads(v)
+        except ValueError:
+            data[k] = v
+    if not data:
+        raise StarryError("usage: starry context key=value [key=value ...] [--ttl SECONDS] | --clear")
+    request(cfg, "PUT", "/v1/context", {"source": cfg.get("name", "mac"), "ttlSec": ttl, "data": data})
+    say(f"Context sent ({len(data)} keys, expires in {ttl}s).")
+
+
+def cmd_raw(a):
+    need(a, 2, "starry raw METHOD PATH [JSON]")
+    cfg = load_config()
+    payload = json.loads(a[2]) if len(a) > 2 else None
+    print(json.dumps(request(cfg, a[0].upper(), a[1], payload), indent=2))
+
+
+# ---- status & watch -----------------------------------------------------------------------
+
+def fmt_ms(ms: int) -> str:
+    s = max(0, int(ms or 0)) // 1000
+    return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60}:{s % 60:02d}"
+
+
+def describe_display(d: dict) -> str:
+    o, t = d["overlay"], d["theme"]
+    sky = "default" if not t.get("sky") else f"{t['sky'][0]}→{t['sky'][1]}"
+    return (f"Layout {d['layout']} · {'visible' if d['visible'] else 'hidden'} · mode {d['mode']} · "
+            f"on top {'yes' if o['alwaysOnTop'] else 'no'} · click-through {'on' if o['clickThrough'] else 'off'}\n"
+            f"Theme {t.get('scheme') or '—'} · accent {t.get('accent') or 'from artwork'} · sky {sky} · "
+            f"lyrics {t['lyricsScale']:g} · glow {'on' if t['artworkGlow'] else 'off'}")
+
+
+def describe_playback(p: dict) -> str:
+    if p.get("title"):
+        where = f" on {p['device']}" if p.get("device") else ""
+        return f"{p['state']}: {p['title']} — {p.get('artist') or ''}{where}  {fmt_ms(p['positionMs'])} / {fmt_ms(p['durationMs'])}"
+    return p["state"]
+
+
+def cmd_status(_a):
+    cfg = load_config()
+    h = request(cfg, "GET", "/v1/health", signed=False)
+    s = request(cfg, "GET", "/v1/state")
+    print(f"Starry Display {h['version']} on {h['name']} ({base_url(cfg)}), protocol {h['protocol']}")
+    print(describe_display(s["display"]))
+    print("Playback " + describe_playback(s["playback"]))
+    c = s.get("context")
+    print("Context " + (", ".join(f"{k}={v}" for k, v in c["data"].items()) + f" (expires {c['expiresAt']})" if c else "none"))
+
+
+def cmd_watch(_a):
+    """Follow live events. Reconnects with backoff (1→30 s) after sleep, Wi-Fi drops or a PC restart."""
+    cfg = load_config()
+    backoff, connected_once = 1, False
+    while True:
+        try:
+            resp = request(cfg, "GET", "/v1/events", stream=True, timeout=45)  # heartbeat every 20 s
+            print(("reconnected" if connected_once else "connected") + f" to {base_url(cfg)}", flush=True)
+            connected_once, backoff = True, 1
+            event, data = None, []
+            while True:
+                line = resp.readline()
+                if not line:
+                    raise ConnectionError("stream closed")
+                line = line.decode("utf-8").rstrip("\r\n")
+                if line == "":
+                    if event and data:
+                        show_event(event, json.loads("\n".join(data)))
+                    event, data = None, []
+                elif line.startswith("event:"):
+                    event = line[6:].strip()
+                elif line.startswith("data:"):
+                    data.append(line[5:].strip())
+        except KeyboardInterrupt:
+            return
+        except (StarryError, ConnectionError, socket.timeout, OSError, ValueError) as e:
+            print(f"disconnected ({e}); retrying in {backoff}s", file=sys.stderr, flush=True)
+            time.sleep(backoff)
+            backoff = min(30, backoff * 2)
+
+
+def show_event(event: str, payload: dict):
+    stamp = time.strftime("%H:%M:%S")
+    if event == "display":
+        text = describe_display(payload).replace("\n", " | ")
+    elif event == "playback":
+        text = describe_playback(payload)
+    elif event == "context":
+        text = "cleared" if payload.get("cleared") else ", ".join(f"{k}={v}" for k, v in payload.get("data", {}).items())
+    else:
+        text = json.dumps(payload)
+    print(f"{stamp} {event:<8} {text}", flush=True)
+
+
+# ---- CLI ----------------------------------------------------------------------------------
+
+def opt(args, name, default):
+    if name in args:
+        i = args.index(name)
+        if i + 1 < len(args):
+            value = args[i + 1]
+            del args[i:i + 2]
+            return value
+    return default
+
+
+def say(msg: str):
+    if not QUIET:
+        print(msg)
+
+
+COMMANDS = {
+    "pair": cmd_pair, "unpair": cmd_unpair, "status": cmd_status, "layout": cmd_layout, "show": cmd_show,
+    "hide": cmd_hide, "top": cmd_top, "clickthrough": cmd_clickthrough, "mode": cmd_mode, "lyrics": cmd_lyrics,
+    "glow": cmd_glow, "accent": cmd_accent, "theme": cmd_theme, "context": cmd_context, "watch": cmd_watch,
+    "raw": cmd_raw,
+}
+
+
+def main(argv):
+    global QUIET
+    if "--quiet" in argv:
+        QUIET = True
+        argv.remove("--quiet")
+    if not argv or argv[0] in ("-h", "--help", "help") or argv[0] not in COMMANDS:
+        print(__doc__.strip())
+        return 0 if argv and argv[0] in ("-h", "--help", "help") else 2
+    try:
+        COMMANDS[argv[0]](argv[1:])
+        return 0
+    except StarryError as e:
+        print(f"starry: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

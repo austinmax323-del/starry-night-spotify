@@ -75,6 +75,40 @@
                 </StackPanel>
             </Border>
 
+            <TextBlock Text="Mac link" Style="{StaticResource SectionTitle}" />
+            <Border Style="{StaticResource Section}">
+                <StackPanel>
+                    <CheckBox x:Name="LinkBox" Content="Allow control from my Mac" Style="{StaticResource ToggleSwitch}" Click="OnLinkToggled" />
+                    <TextBlock x:Name="LinkStatusText" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+
+                    <StackPanel x:Name="LinkDetails" Margin="0,12,0,0">
+                        <Border x:Name="PairPanel" Background="#14FFFFFF" CornerRadius="8" Padding="14,10" Margin="0,0,0,12" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Hint}" Text="On your Mac, run:" />
+                                <TextBox x:Name="PairCommand" Style="{StaticResource FieldBox}" IsReadOnly="True" Margin="0,6,0,6" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Cancel" Style="{StaticResource PillButton}" Height="28" Click="OnCancelPairing" />
+                                    <TextBlock x:Name="PairCountdown" Style="{StaticResource Hint}" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="PairButton" Content="Pair a Mac…" Style="{StaticResource PillButton}" Click="OnPair" />
+                            <Button x:Name="FirewallButton" Content="Allow through firewall…" Style="{StaticResource PillButton}" Margin="8,0,0,0" Click="OnFirewall" />
+                        </StackPanel>
+                        <TextBlock x:Name="FirewallText" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+
+                        <TextBlock Text="Paired" Style="{StaticResource Label}" Margin="0,16,0,6" />
+                        <StackPanel x:Name="DeviceList" />
+
+                        <TextBlock Text="Recent activity" Style="{StaticResource Label}" Margin="0,16,0,6" />
+                        <TextBlock x:Name="ContextText" Style="{StaticResource Hint}" Margin="0,0,0,6" />
+                        <TextBlock x:Name="ActivityText" FontFamily="Cascadia Mono, Consolas" FontSize="11.5" Foreground="{StaticResource InkMutedBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <TextBlock Text="About" Style="{StaticResource SectionTitle}" />
             <Border Style="{StaticResource Section}">
                 <StackPanel>

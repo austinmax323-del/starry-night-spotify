@@ -15,6 +15,8 @@
     <Compile Include="..\StarryDisplay\Lyrics\LrcParser.cs" Link="Linked\LrcParser.cs" />
     <Compile Include="..\StarryDisplay\Lyrics\LrclibLyricsProvider.cs" Link="Linked\LrclibLyricsProvider.cs" />
     <Compile Include="..\StarryDisplay\Services\Log.cs" Link="Linked\Log.cs" />
+    <Compile Include="..\StarryDisplay\Link\LinkProtocol.cs" Link="Linked\LinkProtocol.cs" />
+    <Compile Include="..\StarryDisplay\Link\LinkAuth.cs" Link="Linked\LinkAuth.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
