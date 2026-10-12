@@ -29,6 +29,12 @@ public sealed class LyricsView : Grid
     private const int LoadingMessageDelayMs = 450;
 
     private readonly StackPanel _sheet = new() { VerticalAlignment = VerticalAlignment.Top };
+    /// <summary>
+    /// Clips the scrolling sheet. The edge-fade mask lives on the outer control, whose content
+    /// bounds are therefore fixed to the viewport. (WPF maps an OpacityMask against the element's
+    /// content bounds, so a mask on the scrolling element itself slides away as lyrics scroll.)
+    /// </summary>
+    private readonly Grid _viewport = new() { ClipToBounds = true, Background = Brushes.Transparent };
     private readonly TranslateTransform _scroll = new();
     private readonly TextBlock _message = new()
     {
@@ -57,10 +63,10 @@ public sealed class LyricsView : Grid
     public LyricsView(LyricsLayout layout)
     {
         Layout = layout;
-        ClipToBounds = true;
         Background = Brushes.Transparent;
         _sheet.RenderTransform = _scroll;
-        Children.Add(_sheet);
+        _viewport.Children.Add(_sheet);
+        Children.Add(_viewport);
         Children.Add(_message);
 
         _message.FontFamily = (FontFamily)Application.Current.FindResource("DisplayFont");
