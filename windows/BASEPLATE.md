@@ -76,3 +76,57 @@ Unchanged deliberately: visual design (later phases restyle it), lyric engine
 - Polling, not push: lyric sync can be up to ~2.5 s stale after a seek on the phone.
 - `Topmost` windows don't draw over **exclusive-fullscreen** games; borderless-windowed games are fine. In-game overlay (RTSS/DirectX hook) is a later phase.
 - Episodes/podcasts show "Nothing playing" (upstream behaviour).
+
+---
+
+# Phase 1: from baseplate to standalone display
+
+Researched 2026-10-12. The goal was a display good enough to leave running on its own, with no Mac link, game
+awareness, AI or screen capture.
+
+## What else was looked at before building
+
+| Project | License | What it offered | Decision |
+| --- | --- | --- | --- |
+| [The-MuffinDev/LyricsOnTheGo](https://github.com/The-MuffinDev/LyricsOnTheGo) | MIT | Native WPF lyrics overlay; LRC parser; LRCLIB search fallback; acrylic "glass" via a second Windows.UI.Composition window | **Reused** the LRC parser (adapted) and the search-fallback idea. The glass was skipped: it needs a separate composition window plus WinRT interop, it reads playback locally (SMTC), and an artwork-tinted card suits a dedicated display better. |
+| [WhySoDk/spotify-lyrics-overlay](https://github.com/WhySoDk/spotify-lyrics-overlay) | WTFPL | Album-colour picker (most saturated swatch that's neither too dark nor too white) | **Reused the heuristic**, re-implemented on WPF imaging (no GDI or ColorThief dependency) |
+| [shhhh007/music-island](https://github.com/shhhh007/music-island) | MIT | Always-on-top island with artwork + lyrics | Reads local playback (SMTC), so it can't see the iPhone. Not used. |
+| [jayfunc/BetterLyrics](https://github.com/jayfunc/BetterLyrics) | GPL-3.0 | Best-in-class visuals | Still SMTC + GPL + WinUI 3; reference only |
+| [JohnnyCrazy/SpotifyAPI-NET](https://github.com/JohnnyCrazy/SpotifyAPI-NET) | MIT | Full Web API client | Still one endpoint; not worth the dependency yet |
+
+No reusable WPF control did "lyrics driven by a remote, polled playback clock", so `LyricsView`,
+`PlaybackClock` and the transitions are custom (small and tested).
+
+## What changed and why
+
+| Change | Why |
+| --- | --- |
+| Split the engine (`Core/`) from presentation (`Views/`) via `NowPlayingViewModel` + `IComposition` | Compositions are modular; new layouts don't touch polling or lyrics |
+| `PlaybackController` state machine + `PollPolicy` | All the edge cases (pause, no device, ad, podcast, private, offline, 429, 403, revoked) in one testable place |
+| Per-item `CancellationToken` for artwork and lyrics | A track change mid-lookup can't show stale lyrics |
+| `PlaybackClock` (absorbs ≤0.9 s jitter, never steps back for server lag, snaps on seeks) | Lyrics stay in sync between 3 s polls without jumping backwards |
+| `LyricsView` schedules a one-shot timer for the next line | Accurate timing with ~zero idle CPU (no 60 fps loop) |
+| Lyrics module: `ILyricsProvider` → LRCLIB (`get` → `get` without album → `search` by cleaned title, ±3 s duration) → disk cache | Isolated provider; higher hit rate for "Remastered", "feat." and deluxe-album titles; one request for most tracks |
+| `ArtworkService`: decode once off-thread, 28 px backdrop, accent colour, LRU | Premium look (artwork glow, accent progress) at no per-frame cost |
+| Stage card on a **non-layered** window; strip on a layered one | WPF's transparent windows copy every frame back from the GPU. Moving the card to a normal window took it from ~4.9% to ~1.9% of a core |
+| Lyric sheet hosted in a `Canvas` | Inside a Grid, WPF's layout clip silently hid every line after the first screenful |
+| Polling pauses when hidden, screen-locked, or paused from the tray; resumes after sleep | Leave-it-open friendly |
+| Sign-in: stray/stale callbacks are ignored instead of aborting | A refreshed old tab used to fail the whole sign-in ("state mismatch") |
+| Tray menu (layout, topmost, click-through, pause updates, settings, quit), Settings window (Mica), start with Windows (HKCU Run) | Requested tray/settings integration; no services |
+| `--demo` scripted playback | Lets every state be checked without Spotify (also used for this phase's verification) |
+
+## Verified on the target PC
+
+- Real playback from the iPhone: track changes picked up within one poll, synced lyrics found and scrolled,
+  the device chip shows "iPhone", the accent colour follows each cover.
+- Demo cycle on both layouts: synced lyrics through the whole song, pause hold, break "• • •", podcast, ad,
+  instrumental, nothing playing with last played.
+- CPU and memory as in the README table; 22 core tests pass.
+
+## Known limits
+
+- Lyrics come only from LRCLIB (free, community-run), so some tracks have none, and LRCLIB briefly returned 503s
+  during testing. Those are shown as "unavailable" and retried once.
+- Line-level sync only (no word-by-word karaoke). `Lyricify-Lyrics-Helper` is the candidate if that's wanted later.
+- A seek on the phone takes up to ~3 s (one poll) to reach the PC.
+- The strip floats over borderless or windowed games, not exclusive-fullscreen ones (a later phase).

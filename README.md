@@ -54,8 +54,8 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 
 ## Windows display
 
-`windows/` holds **Starry Display**, a transparent, always-on-top lyrics overlay for the PC. It follows whatever Spotify is playing on any device (usually the iPhone) through the Web API with PKCE sign-in.
-It's built on [EvansLR/spotify-lyrics-overlay-wpf](https://github.com/EvansLR/spotify-lyrics-overlay-wpf) (MIT, WPF/.NET 10).
+`windows/` holds **Starry Display**, a native Windows Spotify display for the PC. It has two layouts: a Stage card (artwork, details, scrolling synced lyrics) and a transparent Lyrics strip for over games and windows.
+It follows whatever Spotify is playing on any device (usually the iPhone) through the Web API with PKCE sign-in, and stays read-only.
 See [windows/README.md](windows/README.md) to set it up, and [windows/BASEPLATE.md](windows/BASEPLATE.md) for what was evaluated, reused and changed.
 Spicetify ignores this folder, so cloning the repo into `~/.config/spicetify` is unaffected.
 
