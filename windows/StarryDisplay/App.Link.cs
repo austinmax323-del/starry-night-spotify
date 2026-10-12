@@ -54,6 +54,7 @@ public partial class App : IDisplayHost
             // Listening on the LAN without a rule makes Windows show its broad "allow on public and
             // private networks?" prompt. Put the narrow rule in place first (one UAC prompt).
             await LinkFirewall.CreateRuleAsync(_settings.LinkPort);
+            if (_link?.IsRunning == true) await _link.RestartAsync();
         }
         if (enabled)
         {

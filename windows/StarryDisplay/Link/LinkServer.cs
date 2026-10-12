@@ -101,7 +101,10 @@ public sealed class LinkServer : IAsyncDisposable
         try
         {
             if (_app is not null) return;
-            var addresses = LocalAddresses();
+            // Without our narrow firewall rule, listening on the LAN makes Windows pop its broad
+            // "allow on public and private networks?" prompt. So until the rule exists: loopback only.
+            var firewallReady = await Task.Run(LinkFirewall.RuleExists);
+            var addresses = firewallReady ? LocalAddresses() : new List<IPAddress> { IPAddress.Loopback };
             var builder = WebApplication.CreateSlimBuilder();
             builder.Logging.ClearProviders();
             builder.WebHost.ConfigureKestrel(o =>
@@ -134,7 +137,8 @@ public sealed class LinkServer : IAsyncDisposable
             lock (_gate)
             {
                 _app = app;
-                _error = addresses.Any(a => !IPAddress.IsLoopback(a)) ? null : "No local network connection; listening on this PC only.";
+                _error = !firewallReady ? "Firewall rule needed before the Mac can connect (listening on this PC only)."
+                    : addresses.Any(a => !IPAddress.IsLoopback(a)) ? null : "No local network connection; listening on this PC only.";
                 _endpoints = addresses.Select(a => $"{a}:{_port}").ToList();
                 _boundSignature = Signature(addresses);
             }
@@ -173,6 +177,14 @@ public sealed class LinkServer : IAsyncDisposable
     }
 
     public async ValueTask DisposeAsync() => await StopAsync();
+
+    /// <summary>Rebind (e.g. after the firewall rule was created).</summary>
+    public async Task RestartAsync()
+    {
+        if (_app is null) return;
+        await StopAsync();
+        await StartAsync();
+    }
 
     private void OnNetworkAddressChanged(object? sender, EventArgs e)
     {

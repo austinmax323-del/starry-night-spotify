@@ -156,6 +156,7 @@ public partial class SettingsWindow : Window
         {
             await LinkFirewall.CreateRuleAsync(_settings.LinkPort);
             _firewallOk = await Task.Run(LinkFirewall.RuleExists);
+            if (_firewallOk == true && _link?.Invoke() is { } server) await server.RestartAsync(); // now bind the LAN
         }
         finally
         {
