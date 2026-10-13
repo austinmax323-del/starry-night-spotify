@@ -146,7 +146,7 @@ without turning this into a distributed system.
 - **Your Orynth project:** it already runs Mac (control plane) ↔ this PC over Tailscale with the same rules (no secrets
   between machines, no remote shell). Tailscale is installed here but wasn't running, so the link works on the plain
   LAN and also binds Tailscale's 100.64/10 when it's up.
-- **This PC's network:** the Wi-Fi is classified *Public* (inbound blocked by default), Portmaster runs, and
+- **This PC's network:** the Wi-Fi is classified *Public* (inbound blocked by default), Portmaster was running (since removed), and
   Bonjour is present, so the Mac resolves as `as-macbook-air.local` and the PC as `zxcvbn.local`.
 - **Transports:** compared in [protocol/PROTOCOL.md](../protocol/PROTOCOL.md#why-this-transport). Chose HTTP/JSON + Server-Sent
   Events on **Kestrel** (part of the .NET runtime already installed, mature, no URL-ACL/admin needed, unlike
@@ -173,4 +173,7 @@ without turning this into a distributed system.
   pairing closed, unknown fields ignored).
 - Reconnection: killed the app under a live `starry watch`; it backed off 1 s → 2 s, reconnected about 1 s after
   relaunch with full state, and kept receiving events. Display settings persisted; context lapsed as designed.
-- The cross-machine path (Mac → PC over Wi-Fi through the firewall rule and Portmaster) still needs one run from the Mac.
+- Cross-machine: the MacBook Air paired over Wi-Fi (`192.168.4.27` → `zxcvbn.local:47836`) through the narrow
+  firewall rule. The first attempts timed out because Portmaster dropped inbound LAN connections
+  (`inbound connections blocked` in its log). After Portmaster was removed, `pair/start` and `pair/finish` both
+  returned 200 and the Mac's key was stored.
