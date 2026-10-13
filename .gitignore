@@ -11,3 +11,6 @@ windows/**/obj/
 windows/dist/
 .vs/
 *.user
+# Python bytecode
+__pycache__/
+*.pyc
