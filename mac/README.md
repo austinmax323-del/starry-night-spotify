@@ -22,10 +22,11 @@ The pairing key goes into your **Keychain** (service `starry-display`). The host
 
 ```sh
 starry status                     # what the display is doing
-starry layout strip               # stage | strip
-starry hide / starry show
-starry top off                    # always on top
-starry clickthrough on            # clicks pass through the strip
+starry overlay on                 # gaming overlay (compact, on top, click-through); off = desktop display
+starry layout strip               # desktop layout: stage | strip (also leaves the overlay)
+starry hide / starry show         # whatever is showing
+starry top off                    # always on top (whatever is showing)
+starry clickthrough on            # clicks pass through (whatever is showing)
 starry mode paused                # stop following Spotify (live to resume)
 starry lyrics 1.3                 # lyric size 0.7–1.6
 starry accent '#FF88AA'           # or: auto
@@ -38,6 +39,10 @@ starry unpair                     # forget on both sides
 
 `theme-cycle.sh` calls `starry theme <scheme>` automatically once you're paired, so switching your
 Spotify scheme from the terminal re-tints the PC display too.
+
+Showing anything from the Mac never takes focus on the PC, so it's safe mid-game. On the PC itself,
+**Ctrl+Alt+O** switches desktop ↔ overlay, **Ctrl+Alt+H** shows/hides, and **Ctrl+Alt+L** toggles click-through
+(all changeable in Settings → Hotkeys).
 
 **Tip:** macOS Shortcuts → "Run Shell Script" → `/usr/local/bin/starry layout strip` gives you a
 menu-bar or keyboard-shortcut button for any command.

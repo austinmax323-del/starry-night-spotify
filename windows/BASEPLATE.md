@@ -177,3 +177,154 @@ without turning this into a distributed system.
   firewall rule. The first attempts timed out because Portmaster dropped inbound LAN connections
   (`inbound connections blocked` in its log). After Portmaster was removed, `pair/start` and `pair/finish` both
   returned 200 and the Mac's key was stored.
+
+---
+
+# Phase 3: gaming overlay
+
+Researched and built 2026-10-12. Goal: a real gaming-overlay presentation of the same display (no game detection,
+injection or capture), with persisted placement, hotkeys, and the Mac link still compatible.
+
+## What existed before
+
+- Desktop display with two layouts: stage card (opaque) and lyrics strip (layered/transparent, could already be
+  always-on-top and click-through via Ctrl+Alt+L).
+- Ctrl+Alt+L was registered on the display window itself, so every strip ↔ card window swap had to hand it over.
+- No DPI manifest: the app was **system**-DPI-aware (bitmap-stretched on a second monitor with different scaling).
+- Placement: remembered bounds, with a "still on a screen?" check against the virtual desktop.
+- Mac link v1 with `layout`, `visible`, `overlay.alwaysOnTop`, `overlay.clickThrough`.
+
+## What was looked at
+
+Metadata checked 2026-10-12 (GitHub API).
+
+| Project | License / activity | What it offers | Decision |
+| --- | --- | --- | --- |
+| [thomaslevesque/NHotkey](https://github.com/thomaslevesque/NHotkey) | Apache-2.0, ★343, pushed 2026-01 | WPF global hotkeys via `RegisterHotKey` on an `HwndSource` parented to `HWND_MESSAGE` ("hotkey sink"); `HotkeyAlreadyRegistered` event | **Pattern adapted** (about 30 lines in `HotkeyService`). Not imported: its WPF surface is `KeyBinding`-driven, and we need per-action status and suspend/resume. |
+| [File-New-Project/EarTrumpet](https://github.com/File-New-Project/EarTrumpet) | MIT (with named exclusions), ★11k, active | `HotkeyManager` over a message window, with **Pause/Resume** while the user records a new hotkey | **Idea reused**: Settings suspends hotkeys while recording so the combination can be pressed. |
+| [micdenny/WpfScreenHelper](https://github.com/micdenny/WpfScreenHelper) | MIT, ★120, pushed 2024-08 | `Screen` for WPF: `EnumDisplayMonitors` + `GetMonitorInfo` + `GetDpiForMonitor` | **Pattern adapted** (about 25 lines in `NativeMethods.Monitors`). Not imported: about 700 lines plus a D2D fallback for Windows 7, and we want physical pixels and per-monitor scale in a pure, testable record. |
+| [microsoft/PowerToys](https://github.com/microsoft/PowerToys) (Always On Top) | MIT, very active | Keeps windows topmost by re-asserting `HWND_TOPMOST` from an out-of-context `SetWinEventHook` (`EVENT_SYSTEM_FOREGROUND`, …) | **Pattern adapted**: the overlay re-asserts topmost on foreground changes only (borderless games sometimes raise themselves). |
+| [dechamps/RudeWindowFixer](https://github.com/dechamps/RudeWindowFixer) | (no license file), 2023 | Documents how full-screen *transparent* click-through windows (WS_EX_LAYERED + TRANSPARENT/NOACTIVATE) confuse the taskbar's "rude window" logic | **Design input**: the overlay is a small card, never a full-screen transparent window, so it can't trigger this. |
+| [michel-pi/GameOverlay.Net](https://github.com/michel-pi/GameOverlay.Net) | MIT, **archived** 2021 | Direct2D overlay windows (SharpDX) | Rejected: archived, brings a rendering stack, more than a small card needs. |
+| [HavenDV/H.Hooks](https://github.com/HavenDV/H.Hooks) | MIT, active | Low-level keyboard/mouse hooks | Rejected: a low-level hook sees every key the game gets. `RegisterHotKey` sees only our combinations. |
+| [lepoco/wpfui](https://github.com/lepoco/wpfui) | MIT, ★9.7k | Fluent WPF control library | Rejected: a UI framework to get a few toggles; the existing theme already has them. |
+| Microsoft docs: [per-monitor DPI for WPF](https://learn.microsoft.com/en-us/windows/win32/hidpi/declaring-managed-apps-dpi-aware) | n/a | `PerMonitorV2` via `app.manifest` | **Adopted.** |
+
+Electron, WebView, injected overlays, DirectX hooks and overlay frameworks were out of scope by design. Nothing
+needed them: a no-activate topmost layered window is the documented way to float UI over a borderless game.
+
+## What changed, and why
+
+| Change | Why |
+| --- | --- |
+| **Presentation** (`desktop` / `overlay`) + **visible**, in one process | The overlay is a mode of the display, not an app. `ApplyPresentation` is the only path that shows/hides windows: it shows the new one before hiding the old one (no polling blip), and activates only when the user asked from the tray |
+| `OverlayWindow`: layered transparent, `WS_EX_NOACTIVATE` + `ShowActivated=false` + `WM_MOUSEACTIVATE → MA_NOACTIVATE`, `WS_EX_TOOLWINDOW`, `WS_EX_TRANSPARENT` when click-through (default on), topmost | Never steals focus (showing, clicking, dragging), no taskbar/Alt+Tab entry, the mouse goes to the game |
+| Topmost re-asserted on `EVENT_SYSTEM_FOREGROUND` (out-of-context WinEvent, skip own process), only while visible and topmost | Survives games that raise themselves; event-driven, so there's no timer |
+| `OverlayView`: fixed card size per density (lyric only / compact / full); `LyricsView` gained an `Overlay` layout (left-aligned, one or two lines) | Lyric changes never resize or re-place the window; the same one-shot line timer as the desktop (no render loop); progress ticks at 1 Hz only in Full |
+| No effects (shadow/blur) on the overlay | In a layered window every effect is re-rendered and read back on each change |
+| `OverlayPlacement` (pure): monitor by device name, then by bounds (renumbering), then primary; nine anchors on the work area + DPI-scaled offset; always clamped onto the monitor; a drop becomes *nearest anchor + offset* | Multi-monitor, mixed DPI, unplug/replug, primary changes and resolution changes can't strand it off-screen, and it returns to its monitor when replugged |
+| Re-place on `WM_DPICHANGED`, `WM_DISPLAYCHANGE`, `DisplaySettingsChanged`; hop to the target monitor before measuring | WPF rescales for the target DPI before the anchor maths |
+| `app.manifest`: PerMonitorV2 | Crisp on every monitor, and real pixels for placement (the app was system-aware before) |
+| `HotkeyService` on a message-only window for the app's lifetime; three configurable hotkeys (Ctrl+Alt+O / H / L), master switch, per-hotkey off, status "in use" | Hotkeys no longer depend on which display window exists; a taken combination degrades to tray/Settings/Mac instead of failing |
+| `HotkeyGesture` (pure) requires Ctrl, Alt or Win and allows only letters, digits, F-keys and a few navigation keys | A registered hotkey is swallowed system-wide; a plain key or Shift+key would be stolen from every game |
+| Main window `ShowActivated=false` | Leaving the overlay (hotkey, Mac) no longer pulls focus from a game |
+| Protocol: additive `presentation` + capability `display.presentation`; `overlay.*` and `visible` apply to whatever is showing; `layout` alone returns to the desktop | Phase 2 clients keep working unchanged (`starry layout stage` still shows the stage card) |
+| `LinkFirewall.RuleExists` now checks the rule's **program** | Found during testing: a second copy of the app (the Debug build) treated the Release build's rule as its own, listened on the LAN, and Windows showed its broad prompt. Now another copy stays loopback-only |
+| Tray: "Gaming overlay" item; hotkey hints show only when registered. Toolbar: gamepad button. Settings: Gaming overlay + Hotkeys sections | Requested controls, kept to the smallest useful set |
+
+## Verified on the PC
+
+Windows 11, i5-10400F (12 logical cores), RTX 3060, one 2560×1080 monitor at 100% with the taskbar on the left.
+
+- **Builds:** Debug and Release, 0 warnings, 0 errors. **Tests:** 75 pass (38 before this phase + 37 new: placement for
+  every anchor, 150% DPI, clamping, oversize, drop round-trips at 100% and 150%, resolution change, monitor fallback,
+  renumbered monitor, primary change, hotkey parsing/refusals/VK mapping, settings migration from a Phase 2 file,
+  repair of bad values, JSON round-trip, protocol validation + compatibility, firewall rule program matching).
+- **Transitions through the Mac link** (loopback test client, 18 checks) and **through the hotkeys** (6 checks):
+  desktop → overlay → hidden → overlay → desktop, hidden → overlay in one call, click-through on/off,
+  always-on-top on/off on both the overlay and the desktop display, an old-style `{"layout":"strip"}` patch leaving the
+  overlay, `presentation` in `GET /v1/state`, 422 for an unknown presentation. After every step the window's actual
+  extended styles were read back (`topmost`, `clickthrough`, `toolwindow`, `noactivate`) and **the foreground window
+  was unchanged every time**.
+- **Restart persistence:** killed the app in overlay mode with click-through off; it came back as the overlay, with
+  click-through off, without taking focus.
+- **Drag:** with click-through off, the overlay was dragged with the mouse; focus stayed on the foreground app, and the
+  drop was saved as `center +412,+132` (exactly the drop point). With click-through on, the mouse went through the
+  overlay to the window underneath.
+- **Still controllable with click-through on:** hotkeys, tray (left click turns click-through off), Settings and the Mac.
+- **Hotkey taken by another app:** a second instance logged `Hotkey Ctrl+Alt+L (lock) is taken by another app (error 1409)`;
+  Settings shows "Taken by another app; pick another"; everything else kept working.
+- **DPI:** the process is now per-monitor-v2 aware (checked with `GetWindowDpiAwarenessContext`); it was system-aware.
+- **Mac link from the real Mac:** paired and controlled (layout, theme) over Wi-Fi earlier today; the protocol change
+  is additive and the Phase 2 commands were re-run against the new build over loopback.
+- **No invasive techniques:** the app imports 14 Win32 functions (`user32`, `dwmapi`, `shcore`): window styles,
+  `SetWindowPos`, monitor/DPI queries, `RegisterHotKey`, and an out-of-context foreground WinEvent. No process
+  handles, hooks, injection, capture or synthetic input (checked by search).
+- Visual check of all three densities and the Settings sections (screenshots during development).
+
+## Measurements
+
+Release build, measured from the process's own CPU time over the window shown, so it covers everything the app
+does. GPU is the Windows "GPU Engine" 3D utilisation attributed to the process. dwm.exe's CPU can't be read without
+elevation; its GPU share stayed at 0.2–0.5% throughout. The `--demo` cycle (103 s) is a **stress case**: a
+synced-lyrics song with a pause, a podcast, an ad, a second song and nothing playing, so 4 artwork changes per 103 s,
+against about 1 per 3–4 minutes with real music.
+
+| What | CPU (one core) | CPU (machine) | GPU 3D | Private memory |
+| --- | --- | --- | --- | --- |
+| Real app, overlay shown, nothing playing (60 s) | 0.44% | 0.04% | 0.00% | 63 MB |
+| Real app, hidden (polling paused, 60 s) | 0.03% | 0.00% | 0.00% | 61 MB |
+| Demo, overlay Full, before the 30 fps cap | 3.28% | 0.27% | 0.20% avg | 91 MB |
+| Demo, overlay **Full** (30 fps transitions) | **2.36%** | **0.20%** | 0.16% avg, 1.1% max | 93 MB |
+| Demo, overlay **Compact** (30 fps transitions) | **2.56%** | **0.21%** | 0.12% avg, 1.1% max | 84 MB |
+| Demo, overlay Full, lyrics moving only (40 s) | 2.29% | 0.19% | 0.26% avg | 100 MB |
+| Demo, desktop stage card (for comparison) | 3.96% | 0.33% | 1.31% avg, 17.5% max | 86 MB |
+| Demo, desktop lyrics strip (for comparison) | 2.43% | 0.20% | 0.94% avg | 86 MB |
+| Real app, overlay **Compact**, real music + synced lyrics (90 s, warm) | **3.31%** | **0.28%** | 0.29% avg, 1.0% max | 114 MB |
+| Real app, desktop stage card, same music (90 s, warm) | 4.68% | 0.39% | 1.48% avg, 10.1% max | 89 MB |
+
+Reading it: the overlay costs less than the stage card, both in the demo cycle and with real music, and about the
+same as the lyrics strip. The real-music rows also include Spotify polling (HTTPS every 3 s) and one track change;
+Phase 1 measured the card at about 1.9% on a different song, so lyric density and track changes move these numbers
+by a couple of points. Memory with real music is higher because of cached artwork and lyrics, and because the hidden
+desktop window keeps its composition.
+Artwork changes add little on top of lyric movement (2.36% for the whole cycle against 2.29% for lyrics only).
+Capping the overlay's transitions at 30 fps took Full from 3.3% to 2.4% of a core, because each frame of a
+transparent window is copied back from the GPU. Nothing runs between changes: no render loop, no high-frequency
+timer (lyrics use a one-shot timer per line, the progress bar ticks at 1 Hz in Full only, and staying on top is
+event-driven).
+
+## Known limits
+
+- **Exclusive fullscreen:** a game in true exclusive fullscreen bypasses the desktop compositor, so no ordinary
+  window can draw over it. Getting around that takes a graphics hook or injection into the game, which this project
+  doesn't do. Supported: borderless and windowed, plus "fullscreen" games that Windows' fullscreen optimisations run
+  like borderless.
+- **Elevated games:** not tested. If a game runs as administrator, `RegisterHotKey` still works, but the
+  topmost re-assert after the game takes the foreground may not win against an elevated window that raises itself.
+- **Scaling and multiple monitors:** this PC has one monitor at 100%. Mixed-DPI, unplug/replug and primary changes are
+  covered by unit tests and handled by the window messages above, but weren't exercised on hardware (see manual checks).
+  Changing Windows' display scaling for a test wasn't done, because it's a system setting on your PC.
+- **AltGr layouts:** Ctrl+Alt+letter is AltGr+letter on many European layouts; change the hotkeys there.
+- The desktop display's click-through still resets on restart (as before); the overlay's is remembered.
+- While the overlay is the presentation and Spotify is signed out, the desktop window shows the sign-in screen instead.
+- Testing left two block rules ("starrydisplay.exe") for the **Debug** build from Windows' prompt. They affect only that
+  copy, and they are why `RuleExists` now checks the program.
+
+## Manual checks still for you
+
+1. In a borderless game: turn on the overlay (Ctrl+Alt+O), play for a minute, and confirm it stays visible and the
+   game keeps focus and the mouse. Try Ctrl+Alt+H and Ctrl+Alt+L in-game.
+2. If you have a second monitor (or change scaling): pick it in Settings → Gaming overlay → Monitor, then unplug it and
+   plug it back; the overlay should wait on the primary and then return.
+3. From the Mac: `git pull`, then `starry overlay on`, `starry hide`, `starry show`, `starry overlay off`.
+
+## What Phase 4 inherits
+
+- Presentation state: `AppSettings.Presentation` + visibility, switched only through `App.SetPresentationAsync` /
+  `SetVisible` / `ApplyPresentation`. A later automatic trigger (for example game awareness) should call these
+  rather than touching windows.
+- `OverlayWindow` / `OverlayView` (density, lyrics/artwork toggles, scale, opacity), `OverlayPlacement` (pure, tested),
+  `HotkeyService` (add an action by adding a field to `HotkeySettings` and a case in `App.OnCommand`).
+- Protocol v1 with `presentation` and capability `display.presentation`; context hints remain stored-only.
+- No game detection, process profiles, capture, vision or Mac-driven game logic exists yet. Those are Phase 4+.

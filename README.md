@@ -54,10 +54,10 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 
 ## Windows display
 
-`windows/` holds **Starry Display**, a native Windows Spotify display for the PC. It has two layouts: a Stage card (artwork, details, scrolling synced lyrics) and a transparent Lyrics strip for over games and windows.
+`windows/` holds **Starry Display**, a native Windows Spotify display for the PC. On the desktop it's a Stage card (artwork, details, scrolling synced lyrics) or a transparent Lyrics strip. For games there's a compact **gaming overlay** that stays on top, lets clicks through and never takes focus (Ctrl+Alt+O).
 It follows whatever Spotify is playing on any device (usually the iPhone) through the Web API with PKCE sign-in, and stays read-only.
 See [windows/README.md](windows/README.md) to set it up, and [windows/BASEPLATE.md](windows/BASEPLATE.md) for what was evaluated, reused and changed.
-The Mac can steer it over the local network with [`mac/starry`](mac/README.md) (layout, visibility, overlay, theme sync; [protocol](protocol/PROTOCOL.md)). Spotify sign-in never leaves the PC.
+The Mac can steer it over the local network with [`mac/starry`](mac/README.md) (gaming overlay, layout, visibility, click-through, theme sync; [protocol](protocol/PROTOCOL.md)). Spotify sign-in never leaves the PC.
 Spicetify ignores this folder, so cloning the repo into `~/.config/spicetify` is unaffected.
 
 ## Files

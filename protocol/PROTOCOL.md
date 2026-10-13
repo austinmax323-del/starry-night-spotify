@@ -86,10 +86,11 @@ Errors are always `{"error": "...", "details": [...]?}` with a meaningful status
 
 ```json
 {
-  "layout": "stage",                 // "stage" | "strip"
-  "visible": true,
+  "presentation": "desktop",         // "desktop" | "overlay" (the gaming overlay); see below
+  "layout": "stage",                 // desktop layout: "stage" | "strip"
+  "visible": true,                   // whether the current presentation is on screen
   "mode": "live",                    // "live" (follow Spotify) | "paused" (stop polling)
-  "overlay": { "alwaysOnTop": true, "clickThrough": false },
+  "overlay": { "alwaysOnTop": true, "clickThrough": false },   // of whatever is showing
   "theme": {
     "scheme": "Galaxy",              // informational: the Mac's Starry Night scheme name
     "accent": "#FFF3C4",             // null = accent follows the artwork
@@ -105,6 +106,29 @@ Errors are always `{"error": "...", "details": [...]?}` with a meaningful status
 The same shape with **every field optional**: omitted means unchanged. `theme.accent` and `theme.sky`
 also accept `"auto"` to return to the default. Changes from the Mac use the same code path as the tray
 and toolbar, and are saved like local changes.
+
+### Presentation (gaming overlay)
+
+Added in Phase 3 as an **additive** v1 field, announced by the capability `display.presentation`.
+
+| Field | Meaning |
+| --- | --- |
+| `presentation` | `"desktop"`: the stage card or strip, per `layout`. `"overlay"`: the compact gaming overlay (small, transparent, always on top, click-through by default, never takes focus). |
+| `visible` | Shows or hides the **current** presentation. Hiding keeps the presentation, so `visible: true` brings back whichever was showing. |
+| `overlay.alwaysOnTop`, `overlay.clickThrough` | Apply to **whatever is showing**. The overlay remembers its own values (click-through is on by default); the desktop display keeps its own. |
+| `layout` | Sets the desktop layout. Sent **without** `presentation`, it also returns to the desktop. A client that only knows `layout` (any Phase 2 client) therefore still gets exactly the layout it asked for. |
+
+Examples:
+
+```
+PATCH /v1/display {"presentation":"overlay"}                 → gaming overlay
+PATCH /v1/display {"visible":false}                          → hide it (still the overlay)
+PATCH /v1/display {"presentation":"overlay","visible":true}  → show the overlay, wherever things were
+PATCH /v1/display {"layout":"stage"}                         → back to the desktop stage card
+```
+
+Showing anything from the Mac never activates a window, so a game keeps focus.
+Overlay placement, size, opacity and detail are PC-side preferences (Settings) and aren't in the protocol.
 
 ### Playback summary (read-only)
 
@@ -161,7 +185,8 @@ Every event carries complete state, so a reconnecting client never needs replay 
 ## Forward compatibility
 
 - Unknown fields are ignored on both sides. New optional fields can be added to v1 freely.
-- New abilities are listed in `capabilities` (for example `"context"`). Clients check capabilities, not versions.
+- New abilities are listed in `capabilities` (for example `"context"`, `"display.presentation"`). Clients check capabilities, not versions.
+- Example: `presentation` was added after Phase 2 without a version bump. Older clients ignore it in state and never send it; older displays ignore it in a patch (unknown field) and don't list `display.presentation`.
 - Enum values a client doesn't know get a 422 that lists the allowed values.
 - A breaking change gets a new path (`/v2/...`) served alongside `/v1`.
 
