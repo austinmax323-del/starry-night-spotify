@@ -25,7 +25,7 @@ public static partial class LinkProtocol
 
     public static readonly string[] Capabilities =
     {
-        "display.layout", "display.visible", "display.mode",
+        "display.layout", "display.visible", "display.mode", "display.presentation",
         "overlay.alwaysOnTop", "overlay.clickThrough",
         "theme.accent", "theme.sky", "theme.scheme", "theme.lyricsScale", "theme.artworkGlow",
         "context", "events"
@@ -34,6 +34,8 @@ public static partial class LinkProtocol
     public static class Layouts { public const string Stage = "stage", Strip = "strip"; public static readonly string[] All = { Stage, Strip }; }
     /// <summary>live = follow Spotify; paused = stop polling (same as the tray's "Pause updates").</summary>
     public static class Modes { public const string Live = "live", Paused = "paused"; public static readonly string[] All = { Live, Paused }; }
+    /// <summary>desktop = the stage card or strip (per layout); overlay = the compact gaming overlay. Added in v1 (capability "display.presentation").</summary>
+    public static class Presentations { public const string Desktop = "desktop", Overlay = "overlay"; public static readonly string[] All = { Desktop, Overlay }; }
 
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -57,6 +59,7 @@ public static partial class LinkProtocol
         var errors = new List<string>();
         if (p.Layout is not null && !Layouts.All.Contains(p.Layout)) errors.Add($"layout must be one of: {string.Join(", ", Layouts.All)}");
         if (p.Mode is not null && !Modes.All.Contains(p.Mode)) errors.Add($"mode must be one of: {string.Join(", ", Modes.All)}");
+        if (p.Presentation is not null && !Presentations.All.Contains(p.Presentation)) errors.Add($"presentation must be one of: {string.Join(", ", Presentations.All)}");
         if (p.Theme is { } t)
         {
             if (t.Accent is not null && t.Accent != "auto" && NormalizeColor(t.Accent) is null) errors.Add("theme.accent must be \"#RRGGBB\" or \"auto\"");
@@ -86,8 +89,13 @@ public static partial class LinkProtocol
 // ---- What Windows reports -----------------------------------------------------------------
 
 /// <summary>Current display configuration (GET /v1/state, "display" events, PATCH response).</summary>
-public sealed record DisplayState(string Layout, bool Visible, string Mode, OverlayState Overlay, ThemeState Theme);
+/// <param name="Layout">Desktop layout (used when <paramref name="Presentation"/> is "desktop").</param>
+/// <param name="Visible">Whether the current presentation is on screen.</param>
+/// <param name="Overlay">Window behaviour of whatever is showing (desktop display or gaming overlay).</param>
+/// <param name="Presentation">"desktop" or "overlay" (added later in v1; older clients ignore it).</param>
+public sealed record DisplayState(string Layout, bool Visible, string Mode, OverlayState Overlay, ThemeState Theme, string Presentation = LinkProtocol.Presentations.Desktop);
 
+/// <summary>Always-on-top and click-through of the window that's currently showing.</summary>
 public sealed record OverlayState(bool AlwaysOnTop, bool ClickThrough);
 
 /// <param name="Accent">Effective override ("#RRGGBB") or null when the accent follows the artwork.</param>
@@ -107,6 +115,8 @@ public sealed record HealthInfo(string Name, string App, string Version, int Pro
 public sealed class DisplayPatch
 {
     public string? Layout { get; set; }
+    /// <summary>"desktop" or "overlay". When omitted but <see cref="Layout"/> is set, the display returns to the desktop.</summary>
+    public string? Presentation { get; set; }
     public bool? Visible { get; set; }
     public string? Mode { get; set; }
     public OverlayPatch? Overlay { get; set; }

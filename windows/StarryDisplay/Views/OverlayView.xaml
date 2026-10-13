@@ -1,0 +1,59 @@
+<UserControl x:Class="StarryDisplay.Views.OverlayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True">
+    <!-- A small glassy card; the window around it is fully transparent. No effects (shadows/blur): they would
+         be re-rendered and read back on every lyric change in a per-pixel-transparent window. -->
+    <Border x:Name="Card" CornerRadius="14" Background="#E00B0E1A" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+            Padding="12,10,14,10">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border x:Name="ArtFrame" Width="56" Height="56" CornerRadius="9" ClipToBounds="True" Margin="0,0,12,0"
+                    VerticalAlignment="Center" Background="#1AFFFFFF">
+                <Image x:Name="Art" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel x:Name="MetaRow">
+                    <TextBlock x:Name="StateText" DockPanel.Dock="Right" FontFamily="{StaticResource TextFont}" FontSize="11"
+                               Foreground="{StaticResource InkMutedBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock x:Name="TitleText" FontFamily="{StaticResource TextFont}" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource InkBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </DockPanel>
+                <TextBlock x:Name="ArtistText" Grid.Row="1" FontFamily="{StaticResource TextFont}" FontSize="12"
+                           Foreground="{StaticResource InkMutedBrush}" TextTrimming="CharacterEllipsis" Margin="0,1,0,0" />
+                <Border x:Name="LyricsHost" Grid.Row="1" Margin="0,4,0,0" ClipToBounds="True" />
+
+                <Border x:Name="ProgressTrack" Grid.Row="2" Height="3" CornerRadius="1.5" Background="{StaticResource TrackBrush}" Margin="0,8,0,0">
+                    <Border x:Name="ProgressFill" CornerRadius="1.5" HorizontalAlignment="Stretch">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="ProgressScale" ScaleX="0" />
+                        </Border.RenderTransform>
+                    </Border>
+                </Border>
+            </Grid>
+
+            <!-- Hover controls, only while click-through is off. They never take focus from the game. -->
+            <StackPanel x:Name="Controls" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Margin="0,-4,-6,0" Opacity="0" IsHitTestVisible="False">
+                <Button Style="{StaticResource IconButton}" Width="26" Height="26" FontSize="11" Content="&#xE72E;" Tag="lock"
+                        ToolTip="Click-through" Margin="0,0,4,0" Click="OnControl" />
+                <Button Style="{StaticResource IconButton}" Width="26" Height="26" FontSize="11" Content="&#xE7F4;" Tag="presentation:desktop"
+                        ToolTip="Back to the desktop display" Margin="0,0,4,0" Click="OnControl" />
+                <Button Style="{StaticResource IconButton}" Width="26" Height="26" FontSize="11" Content="&#xE713;" Tag="settings"
+                        ToolTip="Settings" Click="OnControl" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

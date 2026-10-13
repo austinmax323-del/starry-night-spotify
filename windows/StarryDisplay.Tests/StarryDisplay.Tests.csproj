@@ -8,6 +8,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\StarryDisplay\Core\Models.cs" Link="Linked\Models.cs" />
+    <Compile Include="..\StarryDisplay\Core\Overlay.cs" Link="Linked\Overlay.cs" />
+    <Compile Include="..\StarryDisplay\Core\Hotkeys.cs" Link="Linked\Hotkeys.cs" />
     <Compile Include="..\StarryDisplay\Core\PlaybackClock.cs" Link="Linked\PlaybackClock.cs" />
     <Compile Include="..\StarryDisplay\Core\PollPolicy.cs" Link="Linked\PollPolicy.cs" />
     <Compile Include="..\StarryDisplay\Core\SpotifyPlayerParser.cs" Link="Linked\SpotifyPlayerParser.cs" />
@@ -17,6 +19,7 @@
     <Compile Include="..\StarryDisplay\Services\Log.cs" Link="Linked\Log.cs" />
     <Compile Include="..\StarryDisplay\Link\LinkProtocol.cs" Link="Linked\LinkProtocol.cs" />
     <Compile Include="..\StarryDisplay\Link\LinkAuth.cs" Link="Linked\LinkAuth.cs" />
+    <Compile Include="..\StarryDisplay\Link\LinkFirewall.cs" Link="Linked\LinkFirewall.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

@@ -31,6 +31,26 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
         </Style>
+        <!-- One cell of the 3x3 overlay position picker. -->
+        <Style x:Key="AnchorCell" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Cell" Margin="2" CornerRadius="4" Background="#14FFFFFF" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Cell" Property="Background" Value="#2EFFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Cell" Property="Background" Value="#9FB4FF" />
+                                <Setter TargetName="Cell" Property="BorderBrush" Value="#9FB4FF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -66,12 +86,67 @@
                 </StackPanel>
             </Border>
 
+            <TextBlock Text="Gaming overlay" Style="{StaticResource SectionTitle}" />
+            <Border Style="{StaticResource Section}">
+                <StackPanel>
+                    <TextBlock Text="Show" Style="{StaticResource Label}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+                        <RadioButton x:Name="DesktopRadio" Content="Desktop display" Style="{StaticResource RadioPill}" GroupName="Presentation" Checked="OnChanged" />
+                        <RadioButton x:Name="OverlayRadio" Content="Gaming overlay" Style="{StaticResource RadioPill}" GroupName="Presentation" Checked="OnChanged" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="A small card that stays above borderless and windowed games, lets clicks through and never takes focus. Games in exclusive fullscreen draw over every window; switch them to borderless." />
+
+                    <TextBlock Text="Monitor" Style="{StaticResource Label}" Margin="0,16,0,8" />
+                    <WrapPanel x:Name="MonitorPanel" />
+
+                    <DockPanel Margin="0,16,0,0">
+                        <Grid x:Name="AnchorGrid" DockPanel.Dock="Left" Width="90" Height="56" VerticalAlignment="Top">
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                        </Grid>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="Position" Style="{StaticResource Label}" />
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,2,0,8" Text="Pick a spot, or turn click-through off and drag the overlay where you want it." />
+                            <Button x:Name="ResetOffsetButton" Content="Snap to spot" Style="{StaticResource PillButton}" Height="28" HorizontalAlignment="Left" Click="OnResetOverlayOffset" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock Text="Detail" Style="{StaticResource Label}" Margin="0,16,0,8" />
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="MinimalRadio" Content="Lyric only" Style="{StaticResource RadioPill}" GroupName="Density" Checked="OnChanged" />
+                        <RadioButton x:Name="CompactRadio" Content="Compact" Style="{StaticResource RadioPill}" GroupName="Density" Checked="OnChanged" />
+                        <RadioButton x:Name="FullRadio" Content="Full" Style="{StaticResource RadioPill}" GroupName="Density" Checked="OnChanged" />
+                    </StackPanel>
+
+                    <CheckBox x:Name="OverlayLyricsBox" Content="Lyrics" Style="{StaticResource ToggleSwitch}" Margin="0,16,0,0" Click="OnChanged" />
+                    <CheckBox x:Name="OverlayArtBox" Content="Artwork" Style="{StaticResource ToggleSwitch}" Margin="0,12,0,0" Click="OnChanged" />
+                    <CheckBox x:Name="OverlayClickBox" Content="Click-through (clicks go to the game)" Style="{StaticResource ToggleSwitch}" Margin="0,12,0,0" Click="OnChanged" />
+                    <CheckBox x:Name="OverlayTopBox" Content="Always on top" Style="{StaticResource ToggleSwitch}" Margin="0,12,0,0" Click="OnChanged" />
+
+                    <TextBlock Text="Size" Style="{StaticResource Label}" Margin="0,18,0,6" />
+                    <Slider x:Name="OverlayScaleSlider" Style="{StaticResource FlatSlider}" Minimum="0.6" Maximum="1.6" ValueChanged="OnSliderChanged" />
+                    <TextBlock Text="Opacity" Style="{StaticResource Label}" Margin="0,14,0,6" />
+                    <Slider x:Name="OverlayOpacitySlider" Style="{StaticResource FlatSlider}" Minimum="0.3" Maximum="1" ValueChanged="OnSliderChanged" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Hotkeys" Style="{StaticResource SectionTitle}" />
+            <Border Style="{StaticResource Section}">
+                <StackPanel>
+                    <CheckBox x:Name="HotkeysBox" Content="Global hotkeys" Style="{StaticResource ToggleSwitch}" Click="OnChanged" />
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,10"
+                               Text="They work while a game has focus, and only these exact combinations are taken. Click a box and press a new one (Ctrl, Alt or Win plus a key). Backspace turns one off; Esc cancels." />
+                    <StackPanel x:Name="HotkeyRows" />
+                </StackPanel>
+            </Border>
+
             <TextBlock Text="System" Style="{StaticResource SectionTitle}" />
             <Border Style="{StaticResource Section}">
                 <StackPanel>
                     <CheckBox x:Name="AutostartBox" Content="Start with Windows" Style="{StaticResource ToggleSwitch}" Click="OnChanged" />
                     <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
-                               Text="Click-through: Ctrl+Alt+L, or the tray menu. While locked, clicks pass to whatever is underneath." />
+                               Text="Click-through: the hotkey above, or the tray menu. While it's on, clicks pass to whatever is underneath; a left click on the tray icon turns it off." />
                 </StackPanel>
             </Border>
 

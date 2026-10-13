@@ -11,7 +11,12 @@
     <RootNamespace>StarryDisplay</RootNamespace>
     <AssemblyName>StarryDisplay</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.3.0</Version>
+    <!-- Per-monitor (v2) DPI awareness: crisp on every monitor, and the overlay can place itself in real pixels. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- WFO0003 suggests WinForms' ApplicationHighDpiMode; this is a WPF app (WinForms only draws the tray menu), and a
+         manifest is how WPF opts into per-monitor DPI. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <Version>0.4.0</Version>
     <Product>Starry Display</Product>
     <!-- A light, long-running UI app: workstation GC without the background GC thread. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>

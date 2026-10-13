@@ -11,11 +11,16 @@ namespace StarryDisplay;
 
 /// <summary>
 /// Composition root and command hub: builds the services, owns settings, and routes
-/// toolbar / tray / hotkey / settings-window commands.
+/// toolbar / tray / hotkey / settings-window / Mac commands.
+///
+/// What's on screen is (presentation, visible): the desktop display (stage card or strip) or the gaming
+/// overlay, shown or hidden. Every path (tray, toolbar, hotkeys, Settings, the Mac) goes through
+/// <see cref="ApplyPresentation"/>, which shows the new window before hiding the old one and never activates
+/// a window unless the user asked for it from the tray.
 /// </summary>
 public partial class App : System.Windows.Application
 {
-    // One instance only: a second copy would fight over the tray, the Ctrl+Alt+L hotkey
+    // One instance only: a second copy would fight over the tray, the hotkeys
     // and the OAuth callback port.
     private Mutex? _singleInstance;
 
@@ -25,11 +30,15 @@ public partial class App : System.Windows.Application
     private PlaybackController _controller = null!;
     private NowPlayingViewModel _vm = null!;
     private MainWindow? _window;
+    private OverlayWindow? _overlay;
+    private HotkeyService? _hotkeys;
     private TrayIcon _tray = null!;
     private SettingsWindow? _settingsWindow;
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1.5) };
     private bool _connected;
     private bool _demo;
+    /// <summary>Whether the display (in whichever presentation) should be on screen. Not persisted: it always starts shown.</summary>
+    private bool _visible = true;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -62,7 +71,7 @@ public partial class App : System.Windows.Application
         _settings = await _store.ReadSettingsAsync();
         _spotify = new SpotifyService(_store);
         _vm = new NowPlayingViewModel();
-        _demo = e.Args.Contains("--demo", StringComparer.OrdinalIgnoreCase);
+        _demo = demoArg;
         IPlaybackSource source = _demo ? new DemoPlaybackSource() : _spotify;
         ILyricsProvider lyrics = _demo ? new DemoLyricsProvider() : new CachedLyricsProvider(new LrclibLyricsProvider(), _store.DataDirectory);
         _controller = new PlaybackController(source, lyrics, new ArtworkService(), _vm);
@@ -71,6 +80,10 @@ public partial class App : System.Windows.Application
             Log.Write("Demo mode: scripted playback, no Spotify calls.");
             var layoutArg = e.Args.FirstOrDefault(a => a.StartsWith("--layout=", StringComparison.OrdinalIgnoreCase));
             if (layoutArg is not null) _settings.Layout = layoutArg["--layout=".Length..].ToLowerInvariant() == Layouts.Strip ? Layouts.Strip : Layouts.Stage;
+            var presentationArg = e.Args.FirstOrDefault(a => a.StartsWith("--presentation=", StringComparison.OrdinalIgnoreCase));
+            if (presentationArg is not null) _settings.Presentation = presentationArg["--presentation=".Length..].ToLowerInvariant() == Presentations.Overlay ? Presentations.Overlay : Presentations.Desktop;
+            var densityArg = e.Args.FirstOrDefault(a => a.StartsWith("--density=", StringComparison.OrdinalIgnoreCase));
+            if (densityArg is not null) _settings.Overlay.Density = OverlayDensities.Normalize(densityArg["--density=".Length..]);
         }
 
         _saveTimer.Tick += async (_, _) => { _saveTimer.Stop(); await SaveAsync(); };
@@ -81,6 +94,11 @@ public partial class App : System.Windows.Application
         _tray = new TrayIcon();
         _tray.CommandRequested += OnCommand;
 
+        _hotkeys = new HotkeyService();
+        _hotkeys.Pressed += OnCommand;
+        _hotkeys.StatusChanged += () => { UpdateTray(); _settingsWindow?.RefreshHotkeys(); };
+        _hotkeys.Apply(_settings.Hotkeys);
+
         SystemEvents.SessionSwitch += OnSessionSwitch;
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
         SessionEnding += async (_, _) => await SaveAsync();
@@ -89,8 +107,17 @@ public partial class App : System.Windows.Application
         if (_connected) _controller.SignedIn();
         else _controller.SignedOut("");
         ShowLayout(_settings.Layout);
+        ApplyPresentation();
         await InitLinkAsync();
         UpdateTray();
+
+        // --settings[=overlay]: open Settings (scrolled to the gaming overlay section).
+        var settingsArg = e.Args.FirstOrDefault(a => a.StartsWith("--settings", StringComparison.OrdinalIgnoreCase));
+        if (settingsArg is not null)
+        {
+            OpenSettings();
+            if (settingsArg.EndsWith("=overlay", StringComparison.OrdinalIgnoreCase)) _settingsWindow?.ShowOverlaySection();
+        }
 
         // --pair: turn the link on and open Settings with a fresh pairing code.
         if (e.Args.Contains("--pair", StringComparer.OrdinalIgnoreCase) && !_demo)
@@ -106,12 +133,81 @@ public partial class App : System.Windows.Application
     {
         SystemEvents.SessionSwitch -= OnSessionSwitch;
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        _hotkeys?.Dispose();
         if (_singleInstance is not null)
         {
             try { _singleInstance.ReleaseMutex(); } catch (ApplicationException) { }
             _singleInstance.Dispose();
         }
         base.OnExit(e);
+    }
+
+    // ---- what's on screen ---------------------------------------------------------------------
+
+    /// <summary>The overlay is in use (the setup screen needs the desktop window, so not while signed out).</summary>
+    private bool OverlayActive => _connected && _settings.Presentation == Presentations.Overlay;
+    private string EffectivePresentation => OverlayActive ? Presentations.Overlay : Presentations.Desktop;
+    private bool DisplayVisible => OverlayActive ? _overlay?.IsVisible == true : _window?.IsVisible == true;
+    private bool ActiveClickThrough => OverlayActive ? _settings.Overlay.ClickThrough : _window?.IsLocked == true;
+    private bool ActiveTopmost => OverlayActive ? _settings.Overlay.AlwaysOnTop : _settings.AlwaysOnTop;
+
+    /// <summary>Shows the current presentation (if visible) and hides the other. New window first, so polling never blips.</summary>
+    private void ApplyPresentation(bool activate = false)
+    {
+        if (_window is null) return;
+        if (OverlayActive)
+        {
+            var overlay = EnsureOverlay();
+            if (_visible) overlay.Show(); else overlay.Hide();
+            _window.Hide();
+        }
+        else
+        {
+            if (_visible)
+            {
+                _window.Show();
+                if (activate) _window.Activate();
+            }
+            else _window.Hide();
+            _overlay?.Hide();
+        }
+        UpdateTray();
+    }
+
+    private OverlayWindow EnsureOverlay()
+    {
+        if (_overlay is not null) return _overlay;
+        _overlay = new OverlayWindow();
+        _overlay.CommandRequested += OnCommand;
+        _overlay.PlacementChanged += () => { QueueSave(); _settingsWindow?.Reload(); };
+        _overlay.IsVisibleChanged += (_, _) => OnDisplayVisibilityChanged();
+        _overlay.Attach(_vm, _settings);
+        return _overlay;
+    }
+
+    private void SetVisible(bool visible, bool activate = false)
+    {
+        _visible = visible;
+        ApplyPresentation(activate);
+    }
+
+    private async Task SetPresentationAsync(string presentation)
+    {
+        if (_settings.Presentation == presentation && _visible) return;
+        RememberBounds();
+        _settings.Presentation = presentation;
+        _visible = true;
+        ApplyPresentation();
+        Log.Write($"Presentation: {EffectivePresentation}.");
+        await SaveAsync();
+    }
+
+    private void OnDisplayVisibilityChanged()
+    {
+        // Nobody is looking: stop polling Spotify until something is shown again.
+        if (DisplayVisible) _controller.Resume(PlaybackController.PauseReason.Hidden);
+        else _controller.Pause(PlaybackController.PauseReason.Hidden);
+        UpdateTray();
     }
 
     // ---- commands -----------------------------------------------------------------------
@@ -121,31 +217,44 @@ public partial class App : System.Windows.Application
         switch (command)
         {
             case "tray-click":
-                if (_window!.IsLocked) SetLocked(false);
-                else ToggleWindow();
+                if (DisplayVisible && ActiveClickThrough) SetLocked(false);
+                else SetVisible(!DisplayVisible, activate: true);
                 break;
-            case "toggle":
-                ToggleWindow();
+            case "toggle": // tray menu: the user is at the desktop, so bring it forward
+                SetVisible(!DisplayVisible, activate: true);
+                break;
+            case HotkeyActions.Visibility: // hotkey: maybe mid-game, so never take focus
+                SetVisible(!DisplayVisible);
                 break;
             case "hide":
-                _window!.Hide();
+                SetVisible(false);
+                break;
+            case HotkeyActions.Presentation:
+                await SetPresentationAsync(OverlayActive ? Presentations.Desktop : Presentations.Overlay);
+                break;
+            case "presentation:desktop":
+                await SetPresentationAsync(Presentations.Desktop);
+                break;
+            case "presentation:overlay":
+                await SetPresentationAsync(Presentations.Overlay);
                 break;
             case "layout":
                 await SetLayoutAsync(_settings.Layout == Layouts.Strip ? Layouts.Stage : Layouts.Strip);
                 break;
             case "layout:stage":
                 await SetLayoutAsync(Layouts.Stage);
+                await SetPresentationAsync(Presentations.Desktop); // picking a desktop layout means showing it
                 break;
             case "layout:strip":
                 await SetLayoutAsync(Layouts.Strip);
+                await SetPresentationAsync(Presentations.Desktop);
                 break;
             case "topmost":
-                _settings.AlwaysOnTop = !_settings.AlwaysOnTop;
-                _window!.ApplySettings(_settings);
+                SetTopmost(!ActiveTopmost);
                 await SaveAsync();
                 break;
-            case "lock":
-                SetLocked(!_window!.IsLocked);
+            case HotkeyActions.ClickThrough:
+                SetLocked(!ActiveClickThrough);
                 break;
             case "pause":
                 if (_controller.IsPausedByUser) _controller.Resume(PlaybackController.PauseReason.User);
@@ -162,21 +271,32 @@ public partial class App : System.Windows.Application
         _settingsWindow?.Reload();
     }
 
-    private void ToggleWindow()
-    {
-        if (_window!.IsVisible) _window!.Hide();
-        else
-        {
-            _window!.Show();
-            _window!.Activate();
-        }
-    }
-
+    /// <summary>Click-through for whatever is showing. The overlay's is remembered; the desktop's resets on restart (as before).</summary>
     private void SetLocked(bool locked)
     {
-        _window!.SetLocked(locked);
-        Log.Write(locked ? "Click-through on." : "Click-through off.");
+        if (OverlayActive)
+        {
+            _settings.Overlay.ClickThrough = locked;
+            _overlay?.SetClickThrough(locked);
+            QueueSave();
+        }
+        else _window!.SetLocked(locked);
+        Log.Write($"Click-through {(locked ? "on" : "off")} ({EffectivePresentation}).");
         UpdateTray();
+    }
+
+    private void SetTopmost(bool topmost)
+    {
+        if (OverlayActive)
+        {
+            _settings.Overlay.AlwaysOnTop = topmost;
+            _overlay?.ApplySettings(_settings);
+        }
+        else
+        {
+            _settings.AlwaysOnTop = topmost;
+            _window!.ApplySettings(_settings);
+        }
     }
 
     private async Task SetLayoutAsync(string layout)
@@ -188,6 +308,7 @@ public partial class App : System.Windows.Application
         await SaveAsync();
     }
 
+    /// <summary>Puts the desktop layout into the desktop window (swapping the window only for transparent ↔ opaque).</summary>
     private void ShowLayout(string layout)
     {
         // Sign-in needs room: show the stage card while signed out, whatever layout is chosen.
@@ -200,9 +321,8 @@ public partial class App : System.Windows.Application
             // The strip needs a per-pixel-transparent window, the card a normal one; WPF can't switch
             // a live window between the two, so this (and only this) swaps the window.
             var old = _window;
-            var visible = old?.IsVisible ?? true;
+            var visible = old?.IsVisible ?? false;
             var locked = old?.IsLocked ?? false;
-            old?.ReleaseHotKey(); // let the new window own Ctrl+Alt+L
             _window = CreateWindow(transparent);
             _window!.ShowComposition(effective, _vm, _settings, bounds);
             _window!.ApplySettings(_settings);
@@ -226,9 +346,7 @@ public partial class App : System.Windows.Application
         window.IsVisibleChanged += (_, _) =>
         {
             if (!ReferenceEquals(window, _window)) return; // a window being replaced
-            if (window.IsVisible) _controller.Resume(PlaybackController.PauseReason.Hidden);
-            else _controller.Pause(PlaybackController.PauseReason.Hidden);
-            UpdateTray();
+            OnDisplayVisibilityChanged();
         };
         window.LocationChanged += (_, _) => QueueSave();
         window.SizeChanged += (_, _) => QueueSave();
@@ -243,6 +361,7 @@ public partial class App : System.Windows.Application
             _connected = connected;
             if (!connected) _window!.Setup.SetStatus(_vm.StatusDetail);
             ShowLayout(_settings.Layout);
+            ApplyPresentation(); // signed out: back to the desktop window for the sign-in screen
             _settingsWindow?.RefreshAccount();
         }
         UpdateTooltip();
@@ -255,6 +374,7 @@ public partial class App : System.Windows.Application
         await SaveAsync();
         _connected = true;
         ShowLayout(_settings.Layout);
+        ApplyPresentation();
         _controller.SignedIn();
         _settingsWindow?.RefreshAccount();
     }
@@ -267,14 +387,20 @@ public partial class App : System.Windows.Application
             return;
         }
         _settingsWindow = new SettingsWindow(_settings, () => _connected, _store.DataDirectory);
+        var shownPresentation = _settings.Presentation;
         _settingsWindow.SettingsChanged += async () =>
         {
+            // Choosing a presentation in Settings means wanting to see it.
+            if (_settings.Presentation != shownPresentation) { shownPresentation = _settings.Presentation; _visible = true; }
             if (_window!.Current?.Id != (_connected ? _settings.Layout : Layouts.Stage))
             {
                 RememberBounds(_window!.Current?.Id);
                 ShowLayout(_settings.Layout);
             }
             _window!.ApplySettings(_settings);
+            _overlay?.ApplySettings(_settings);
+            ApplyPresentation();
+            _hotkeys?.Apply(_settings.Hotkeys);
             Autostart.Apply(_settings.StartWithWindows);
             UpdateTray();
             await SaveAsync();
@@ -286,11 +412,11 @@ public partial class App : System.Windows.Application
                 _spotify.Disconnect();
                 _controller.SignedOut("Signed out. Paste a Client ID to connect again.");
             }
-            _window!.Show();
-            _window!.Activate();
+            SetVisible(true, activate: true);
             _settingsWindow?.RefreshAccount();
         };
         _settingsWindow.AttachLink(() => _link, SetLinkEnabledAsync, GetContext);
+        _settingsWindow.AttachOverlay(NativeMethods.Monitors, _hotkeys!);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
     }
@@ -300,7 +426,10 @@ public partial class App : System.Windows.Application
         await SaveAsync();
         await StopLinkAsync();
         _tray.Dispose();
+        _hotkeys?.Dispose();
+        _hotkeys = null;
         _settingsWindow?.Close();
+        _overlay?.CloseForReal();
         _window!.CloseForReal();
         Shutdown();
     }
@@ -325,7 +454,7 @@ public partial class App : System.Windows.Application
 
     private void QueueSave()
     {
-        if (!_window!.IsLoaded) return;
+        if (_window is null || !_window.IsLoaded && _overlay?.IsLoaded != true) return;
         _saveTimer.Stop();
         _saveTimer.Start();
     }
@@ -354,7 +483,8 @@ public partial class App : System.Windows.Application
 
     private void UpdateTray()
     {
-        _tray?.Update(_window!.IsVisible, _settings.Layout, _settings.AlwaysOnTop, _window!.IsLocked, _controller.IsPausedByUser);
+        if (_window is null) return;
+        _tray?.Update(DisplayVisible, EffectivePresentation, _settings.Layout, ActiveTopmost, ActiveClickThrough, _controller.IsPausedByUser, _settings.Hotkeys, _hotkeys?.Status);
         PublishDisplay(); // tell a connected Mac about any change, whatever its source
     }
 

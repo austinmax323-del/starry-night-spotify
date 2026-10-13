@@ -15,9 +15,12 @@ public static class Anim
     public static readonly IEasingFunction EaseOut = Freeze(new CubicEase { EasingMode = EasingMode.EaseOut });
     public static readonly IEasingFunction EaseInOut = Freeze(new CubicEase { EasingMode = EasingMode.EaseInOut });
 
-    public static void To(IAnimatable target, DependencyProperty property, double to, int ms, IEasingFunction? ease = null, Action? completed = null)
+    /// <param name="fps">Optional frame-rate cap. The overlay uses 30: each frame of a per-pixel-transparent window is
+    /// read back from the GPU, and short fades look the same at 30 fps.</param>
+    public static void To(IAnimatable target, DependencyProperty property, double to, int ms, IEasingFunction? ease = null, Action? completed = null, int? fps = null)
     {
         var a = new DoubleAnimation(to, TimeSpan.FromMilliseconds(ms)) { EasingFunction = ease ?? EaseOut };
+        if (fps is not null) Timeline.SetDesiredFrameRate(a, fps);
         if (completed is not null) a.Completed += (_, _) => completed();
         target.BeginAnimation(property, a, HandoffBehavior.SnapshotAndReplace);
     }
@@ -73,11 +76,12 @@ public static class Anim
         return back;
     }
 
-    public static void ColorTo(SolidColorBrush brush, Color to, int ms)
+    public static void ColorTo(SolidColorBrush brush, Color to, int ms, int? fps = null)
     {
         if (brush.IsFrozen) return;
-        brush.BeginAnimation(SolidColorBrush.ColorProperty,
-            new ColorAnimation(to, TimeSpan.FromMilliseconds(ms)) { EasingFunction = EaseInOut }, HandoffBehavior.SnapshotAndReplace);
+        var a = new ColorAnimation(to, TimeSpan.FromMilliseconds(ms)) { EasingFunction = EaseInOut };
+        if (fps is not null) Timeline.SetDesiredFrameRate(a, fps);
+        brush.BeginAnimation(SolidColorBrush.ColorProperty, a, HandoffBehavior.SnapshotAndReplace);
     }
 
     /// <summary>A static, tileable star field. Drawn once; no animation; ties the PC display to the Mac's Starry Night theme.</summary>

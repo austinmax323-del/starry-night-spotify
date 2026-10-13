@@ -8,10 +8,11 @@ except `starry watch`, which keeps a live event stream open and reconnects on it
 
   starry pair zxcvbn.local ABCD-EFGH     pair once (code from Settings > Mac link > Pair a Mac)
   starry status                         what the display is doing
-  starry layout stage|strip
+  starry overlay on|off                 gaming overlay (compact, on top, click-through) / back to the desktop display
+  starry layout stage|strip             desktop layout (also leaves the overlay)
   starry show | hide
-  starry top on|off                     always on top
-  starry clickthrough on|off            clicks pass through the strip (gaming)
+  starry top on|off                     always on top (whatever is showing)
+  starry clickthrough on|off            clicks pass through to the game/desktop (whatever is showing)
   starry mode live|paused               follow Spotify / pause updates
   starry lyrics 1.2                     lyric size (0.7 - 1.6)
   starry glow on|off                    artwork glow behind the card
@@ -245,6 +246,7 @@ def need(args, n, usage):
 
 
 def cmd_layout(a): need(a, 1, "starry layout stage|strip"); patch({"layout": a[0]})
+def cmd_overlay(a): need(a, 1, "starry overlay on|off"); patch({"presentation": "overlay" if on_off(a[0]) else "desktop"})
 def cmd_show(_a): patch({"visible": True})
 def cmd_hide(_a): patch({"visible": False})
 def cmd_top(a): need(a, 1, "starry top on|off"); patch({"overlay": {"alwaysOnTop": on_off(a[0])}})
@@ -326,7 +328,9 @@ def fmt_ms(ms: int) -> str:
 def describe_display(d: dict) -> str:
     o, t = d["overlay"], d["theme"]
     sky = "default" if not t.get("sky") else f"{t['sky'][0]}→{t['sky'][1]}"
-    return (f"Layout {d['layout']} · {'visible' if d['visible'] else 'hidden'} · mode {d['mode']} · "
+    # "presentation" arrived with the gaming overlay; an older PC doesn't send it.
+    shown = "Gaming overlay" if d.get("presentation") == "overlay" else f"Layout {d['layout']}"
+    return (f"{shown} · {'visible' if d['visible'] else 'hidden'} · mode {d['mode']} · "
             f"on top {'yes' if o['alwaysOnTop'] else 'no'} · click-through {'on' if o['clickThrough'] else 'off'}\n"
             f"Theme {t.get('scheme') or '—'} · accent {t.get('accent') or 'from artwork'} · sky {sky} · "
             f"lyrics {t['lyricsScale']:g} · glow {'on' if t['artworkGlow'] else 'off'}")
@@ -412,7 +416,7 @@ def say(msg: str):
 
 
 COMMANDS = {
-    "pair": cmd_pair, "unpair": cmd_unpair, "status": cmd_status, "layout": cmd_layout, "show": cmd_show,
+    "pair": cmd_pair, "unpair": cmd_unpair, "status": cmd_status, "overlay": cmd_overlay, "layout": cmd_layout, "show": cmd_show,
     "hide": cmd_hide, "top": cmd_top, "clickthrough": cmd_clickthrough, "mode": cmd_mode, "lyrics": cmd_lyrics,
     "glow": cmd_glow, "accent": cmd_accent, "theme": cmd_theme, "context": cmd_context, "watch": cmd_watch,
     "raw": cmd_raw,

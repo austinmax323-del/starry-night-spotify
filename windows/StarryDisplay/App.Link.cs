@@ -89,9 +89,17 @@ public partial class App : IDisplayHost
             await SetLayoutAsync(layout == LinkProtocol.Layouts.Strip ? Layouts.Strip : Layouts.Stage);
             changes.Add($"layout={layout}");
         }
-        if (patch.Visible is { } visible && visible != _window!.IsVisible)
+        // Asking for a desktop layout means wanting to see it, so `layout` alone also returns from the overlay
+        // (older clients that only know `layout` keep working as they did).
+        var presentation = patch.Presentation ?? (patch.Layout is not null ? Presentations.Desktop : null);
+        if (presentation is not null && presentation != EffectivePresentation)
         {
-            if (visible) { _window.Show(); } else { _window.Hide(); }
+            await SetPresentationAsync(presentation);
+            changes.Add($"presentation={presentation}");
+        }
+        if (patch.Visible is { } visible && visible != DisplayVisible)
+        {
+            SetVisible(visible); // never activates: the PC may be mid-game
             changes.Add($"visible={visible}");
         }
         if (patch.Mode is { } mode && (mode == LinkProtocol.Modes.Paused) != _controller.IsPausedByUser)
@@ -102,14 +110,14 @@ public partial class App : IDisplayHost
         }
         if (patch.Overlay is { } o)
         {
-            if (o.AlwaysOnTop is { } top && top != _settings.AlwaysOnTop)
+            // Both apply to whatever is showing: the desktop display or the overlay.
+            if (o.AlwaysOnTop is { } top && top != ActiveTopmost)
             {
-                _settings.AlwaysOnTop = top;
-                _window!.ApplySettings(_settings);
+                SetTopmost(top);
                 saveNeeded = true;
                 changes.Add($"alwaysOnTop={top}");
             }
-            if (o.ClickThrough is { } through && through != _window!.IsLocked)
+            if (o.ClickThrough is { } through && through != ActiveClickThrough)
             {
                 SetLocked(through);
                 changes.Add($"clickThrough={through}");
@@ -139,6 +147,7 @@ public partial class App : IDisplayHost
             if (t.ArtworkGlow is { } glow) { _settings.ArtworkBackdrop = glow; saveNeeded = true; changes.Add($"artworkGlow={glow}"); }
             ApplyThemeToViewModel();
             _window!.ApplySettings(_settings);
+            _overlay?.ApplySettings(_settings);
         }
 
         if (saveNeeded) await SaveAsync();
@@ -182,12 +191,13 @@ public partial class App : IDisplayHost
 
     private DisplayState BuildDisplay() => new(
         _settings.Layout == Layouts.Strip ? LinkProtocol.Layouts.Strip : LinkProtocol.Layouts.Stage,
-        _window?.IsVisible ?? false,
+        DisplayVisible,
         _controller.IsPausedByUser ? LinkProtocol.Modes.Paused : LinkProtocol.Modes.Live,
-        new OverlayState(_settings.AlwaysOnTop, _window?.IsLocked ?? false),
+        new OverlayState(ActiveTopmost, ActiveClickThrough),
         new ThemeState(_settings.ThemeScheme, _settings.AccentOverride,
             _settings.SkyTop is not null && _settings.SkyBottom is not null ? new[] { _settings.SkyTop, _settings.SkyBottom } : null,
-            _settings.LyricsScale, _settings.ArtworkBackdrop));
+            _settings.LyricsScale, _settings.ArtworkBackdrop),
+        EffectivePresentation);
 
     private static bool Same(DisplayState a, DisplayState b) =>
         System.Text.Json.JsonSerializer.Serialize(a, LinkProtocol.Json) == System.Text.Json.JsonSerializer.Serialize(b, LinkProtocol.Json);

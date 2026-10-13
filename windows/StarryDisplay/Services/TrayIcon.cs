@@ -7,7 +7,7 @@ namespace StarryDisplay.Services;
 public sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _icon;
-    private readonly ToolStripMenuItem _show, _stage, _strip, _topmost, _lock, _pause;
+    private readonly ToolStripMenuItem _show, _overlay, _stage, _strip, _topmost, _lock, _pause;
 
     public event Action<string>? CommandRequested;
 
@@ -17,6 +17,7 @@ public sealed class TrayIcon : IDisposable
         menu.ForeColor = Color.FromArgb(235, 238, 248);
 
         _show = Item("Hide display", "toggle");
+        _overlay = Item("Gaming overlay", "overlay");
         var layout = new ToolStripMenuItem("Layout") { ForeColor = menu.ForeColor };
         _stage = Item("Stage card", "layout:stage");
         _strip = Item("Lyrics strip", "layout:strip");
@@ -24,12 +25,12 @@ public sealed class TrayIcon : IDisposable
         layout.DropDown.BackColor = NightColors.Back;
         if (layout.DropDown is ToolStripDropDownMenu dd) { dd.ShowImageMargin = false; dd.ShowCheckMargin = true; }
         _topmost = Item("Always on top", "topmost");
-        _lock = Item("Click-through   Ctrl+Alt+L", "lock");
+        _lock = Item("Click-through", "lock");
         _pause = Item("Pause updates", "pause");
 
         menu.Items.AddRange(new ToolStripItem[]
         {
-            _show, layout, new ToolStripSeparator(), _topmost, _lock, _pause, new ToolStripSeparator(),
+            _show, _overlay, layout, new ToolStripSeparator(), _topmost, _lock, _pause, new ToolStripSeparator(),
             Item("Settings…", "settings"), Item("Quit Starry Display", "quit")
         });
 
@@ -46,15 +47,26 @@ public sealed class TrayIcon : IDisposable
         };
     }
 
-    public void Update(bool windowVisible, string layout, bool topmost, bool locked, bool paused)
+    /// <param name="topmost">Always-on-top of whatever is showing (desktop display or overlay).</param>
+    /// <param name="locked">Click-through of whatever is showing.</param>
+    public void Update(bool visible, string presentation, string layout, bool topmost, bool locked, bool paused,
+        Core.HotkeySettings hotkeys, IReadOnlyDictionary<string, string>? hotkeyStatus)
     {
-        _show.Text = windowVisible ? "Hide display" : "Show display";
-        _stage.Checked = layout == Core.Layouts.Stage;
-        _strip.Checked = layout == Core.Layouts.Strip;
+        var overlay = presentation == Core.Presentations.Overlay;
+        _show.Text = (visible ? "Hide " : "Show ") + (overlay ? "overlay" : "display") + Keys(hotkeys, hotkeyStatus, Core.HotkeyActions.Visibility);
+        _overlay.Text = "Gaming overlay" + Keys(hotkeys, hotkeyStatus, Core.HotkeyActions.Presentation);
+        _overlay.Checked = overlay;
+        _stage.Checked = !overlay && layout == Core.Layouts.Stage;
+        _strip.Checked = !overlay && layout == Core.Layouts.Strip;
         _topmost.Checked = topmost;
+        _lock.Text = "Click-through" + Keys(hotkeys, hotkeyStatus, Core.HotkeyActions.ClickThrough);
         _lock.Checked = locked;
         _pause.Checked = paused;
     }
+
+    /// <summary>"   Ctrl+Alt+L" when that hotkey is registered, else nothing.</summary>
+    private static string Keys(Core.HotkeySettings hotkeys, IReadOnlyDictionary<string, string>? status, string action) =>
+        status is not null && status.TryGetValue(action, out var s) && s == "on" ? "   " + hotkeys.Get(action) : "";
 
     /// <summary>Tooltip, e.g. "Song — Artist". Windows caps tray tooltips at 127 chars.</summary>
     public void SetTooltip(string text)

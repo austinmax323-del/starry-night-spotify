@@ -72,7 +72,9 @@ public sealed class SettingsStore
 
     public async Task<AppSettings> ReadSettingsAsync()
     {
-        return await ReadAsync<AppSettings>("settings.json") ?? new AppSettings();
+        var settings = await ReadAsync<AppSettings>("settings.json") ?? new AppSettings();
+        settings.Normalize();
+        return settings;
     }
 
     public void Delete(string name)

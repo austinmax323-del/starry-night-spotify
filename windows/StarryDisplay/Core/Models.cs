@@ -59,7 +59,11 @@ public sealed class AppSettings
     // so it lives in plain settings. Tokens do not — see SettingsStore.WriteSecretAsync.
     public string ClientId { get; set; } = "";
 
+    /// <summary>"desktop" (the stage card or strip, per <see cref="Layout"/>) or "overlay" (the gaming overlay).</summary>
+    public string Presentation { get; set; } = Presentations.Desktop;
+    /// <summary>Desktop layout: stage card or lyrics strip.</summary>
     public string Layout { get; set; } = Layouts.Stage;
+    /// <summary>Desktop display's always-on-top (the overlay has its own in <see cref="Overlay"/>).</summary>
     public bool AlwaysOnTop { get; set; } = true;
     /// <summary>1.0 = default lyric size; scales every composition's lyric type.</summary>
     public double LyricsScale { get; set; } = 1.0;
@@ -81,6 +85,25 @@ public sealed class AppSettings
 
     public WindowBounds? StageBounds { get; set; }
     public WindowBounds? StripBounds { get; set; }
+
+    public OverlaySettings Overlay { get; set; } = new();
+    public HotkeySettings Hotkeys { get; set; } = new();
+
+    /// <summary>Fills in anything missing or out of range (older settings files have no overlay/hotkey sections).</summary>
+    public void Normalize()
+    {
+        Presentation = Presentations.All.Contains(Presentation) ? Presentation : Presentations.Desktop;
+        Layout = Layout == Layouts.Strip ? Layouts.Strip : Layouts.Stage;
+        Overlay ??= new OverlaySettings();
+        Overlay.Normalize();
+        Hotkeys ??= new HotkeySettings();
+        foreach (var (action, gesture) in Hotkeys.All().ToList())
+        {
+            // Keep blanks (= off); replace anything unparseable with the canonical form or blank.
+            if (gesture is null) Hotkeys.Set(action, "");
+            else if (gesture.Length > 0) Hotkeys.Set(action, HotkeyGesture.Parse(gesture)?.ToString() ?? "");
+        }
+    }
 }
 
 public static class Layouts

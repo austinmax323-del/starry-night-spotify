@@ -13,7 +13,9 @@ public enum LyricsLayout
     /// <summary>Full scrolling sheet: context above and below, left-aligned.</summary>
     Sheet,
     /// <summary>Current line + next line, centered (for the overlay strip).</summary>
-    Strip
+    Strip,
+    /// <summary>Current line (+ optionally the next), left-aligned and small (the gaming overlay).</summary>
+    Overlay
 }
 
 /// <summary>
@@ -76,9 +78,10 @@ public sealed class LyricsView : Grid
 
         _lineTimer.Tick += (_, _) => Resync(animate: true);
         _loadingTimer.Tick += (_, _) => { _loadingTimer.Stop(); ShowMessage("Finding lyrics…"); };
+        if (Layout == LyricsLayout.Overlay) _message.HorizontalAlignment = HorizontalAlignment.Left;
         SizeChanged += (_, _) =>
         {
-            OpacityMask = Layout == LyricsLayout.Strip ? null : EdgeFade(ActualHeight, 0.16, 0.86);
+            OpacityMask = Layout != LyricsLayout.Sheet ? null : EdgeFade(ActualHeight, 0.16, 0.86);
             Remeasure(jump: true);
         };
         IsVisibleChanged += (_, _) =>
@@ -90,6 +93,9 @@ public sealed class LyricsView : Grid
     }
 
     public LyricsLayout Layout { get; }
+
+    /// <summary>Frame-rate cap for this view's transitions (null = WPF default, 60).</summary>
+    public int? FrameRate { get; set; }
 
     private double _fontScale = 1.0;
     public double FontScale
@@ -104,13 +110,28 @@ public sealed class LyricsView : Grid
         }
     }
 
-    private double BaseSize => (Layout == LyricsLayout.Strip ? 34 : 27) * _fontScale;
-    private double Anchor => Layout == LyricsLayout.Strip ? 0.36 : 0.36;
+    private bool _showNext = true;
+    /// <summary>Strip/overlay: show the upcoming line dimmed under the current one.</summary>
+    public bool ShowNext
+    {
+        get => _showNext;
+        set
+        {
+            if (_showNext == value) return;
+            _showNext = value;
+            Remeasure(jump: true);
+        }
+    }
+
+    /// <summary>Strip and overlay show a line or two; the sheet scrolls through the whole song.</summary>
+    private bool Compact => Layout != LyricsLayout.Sheet;
+    private double BaseSize => Layout switch { LyricsLayout.Strip => 34, LyricsLayout.Overlay => 20, _ => 27 } * _fontScale;
+    private double Anchor => Layout == LyricsLayout.Overlay && !_showNext ? 0.5 : Layout == LyricsLayout.Overlay ? 0.3 : 0.36;
 
     public void SetAccent(Color accent)
     {
         if (_breakBrush.IsFrozen) _breakBrush = _breakBrush.Clone();
-        Anim.ColorTo(_breakBrush, accent, 600);
+        Anim.ColorTo(_breakBrush, accent, 600, fps: FrameRate);
     }
 
     public void Attach(PlaybackClock clock)
@@ -157,7 +178,7 @@ public sealed class LyricsView : Grid
             {
                 case LyricsKind.Synced:
                 case LyricsKind.Unsynced:
-                    Anim.To(_sheet, OpacityProperty, 1, 320);
+                    Anim.To(_sheet, OpacityProperty, 1, 320, fps: FrameRate);
                     break;
                 case LyricsKind.Instrumental:
                     ShowMessage("♪  Instrumental");
@@ -173,8 +194,8 @@ public sealed class LyricsView : Grid
 
         if (hadContent && IsVisible)
         {
-            Anim.To(_message, OpacityProperty, 0, 140, Anim.EaseInOut);
-            Anim.To(_sheet, OpacityProperty, 0, 140, Anim.EaseInOut, Apply);
+            Anim.To(_message, OpacityProperty, 0, 140, Anim.EaseInOut, fps: FrameRate);
+            Anim.To(_sheet, OpacityProperty, 0, 140, Anim.EaseInOut, Apply, fps: FrameRate);
         }
         else
         {
@@ -187,8 +208,8 @@ public sealed class LyricsView : Grid
     private void ShowMessage(string text)
     {
         _message.Text = text;
-        _message.FontSize = Math.Max(15, BaseSize * 0.62);
-        Anim.To(_message, OpacityProperty, 1, 280);
+        _message.FontSize = MessageSize;
+        Anim.To(_message, OpacityProperty, 1, 280, fps: FrameRate);
     }
 
     private void Build(LyricsDocument? doc)
@@ -225,6 +246,7 @@ public sealed class LyricsView : Grid
                 FontWeight = FontWeights.SemiBold,
                 Foreground = line.IsBreak ? _breakBrush : (Brush)Application.Current.FindResource("InkBrush"),
                 TextAlignment = Layout == LyricsLayout.Strip ? TextAlignment.Center : TextAlignment.Left,
+                TextTrimming = Layout == LyricsLayout.Overlay ? TextTrimming.CharacterEllipsis : TextTrimming.None,
                 RenderTransformOrigin = Layout == LyricsLayout.Strip ? new Point(0.5, 0.5) : new Point(0, 0.5),
                 RenderTransform = new ScaleTransform(1, 1),
                 Tag = line.IsBreak,
@@ -248,10 +270,12 @@ public sealed class LyricsView : Grid
         {
             var isBreak = tb.Tag is true;
             tb.FontSize = BaseSize * (unsynced ? 0.72 : 1.0) * (isBreak ? 0.8 : 1.0);
-            tb.Margin = new Thickness(0, 0, 0, Layout == LyricsLayout.Strip ? 4 : BaseSize * (unsynced ? 0.25 : 0.42));
+            tb.Margin = new Thickness(0, 0, 0, Layout switch { LyricsLayout.Strip => 4, LyricsLayout.Overlay => 2, _ => BaseSize * (unsynced ? 0.25 : 0.42) });
         }
-        _message.FontSize = Math.Max(15, BaseSize * 0.62);
+        _message.FontSize = MessageSize;
     }
+
+    private double MessageSize => Layout == LyricsLayout.Overlay ? Math.Max(12, BaseSize * 0.72) : Math.Max(15, BaseSize * 0.62);
 
     /// <summary>Re-reads line positions after a size/font change, then re-centres.</summary>
     private void Remeasure(bool jump)
@@ -319,16 +343,16 @@ public sealed class LyricsView : Grid
     {
         _active = index;
         _appliedRunning = _clock?.IsRunning ?? false;
-        var strip = Layout == LyricsLayout.Strip;
+        var strip = Compact;
         var focus = Math.Max(0, index);
         var paused = _clock is { IsRunning: false };
 
         for (var i = 0; i < _blocks.Count; i++)
         {
             var d = i - index; // index -1 (before first line) makes everything "upcoming"
-            var opacity = strip ? StripOpacity(d) : SheetOpacity(d);
+            var opacity = strip ? StripOpacity(d, _showNext) : SheetOpacity(d);
             if (paused && d == 0) opacity = 0.82;
-            var scale = d == 0 ? 1.0 : strip ? 0.8 : 0.95;
+            var scale = d == 0 ? 1.0 : Layout == LyricsLayout.Strip ? 0.8 : Layout == LyricsLayout.Overlay ? 0.9 : 0.95;
 
             if (Math.Abs(_targetOpacity[i] - opacity) > 0.001 || !animate)
             {
@@ -336,9 +360,9 @@ public sealed class LyricsView : Grid
                 var st = (ScaleTransform)_blocks[i].RenderTransform;
                 if (animate)
                 {
-                    Anim.To(_blocks[i], OpacityProperty, opacity, 360);
-                    Anim.To(st, ScaleTransform.ScaleXProperty, scale, 420);
-                    Anim.To(st, ScaleTransform.ScaleYProperty, scale, 420);
+                    Anim.To(_blocks[i], OpacityProperty, opacity, 360, fps: FrameRate);
+                    Anim.To(st, ScaleTransform.ScaleXProperty, scale, 420, fps: FrameRate);
+                    Anim.To(st, ScaleTransform.ScaleYProperty, scale, 420, fps: FrameRate);
                 }
                 else
                 {
@@ -351,7 +375,7 @@ public sealed class LyricsView : Grid
 
         var target = ActualHeight * Anchor - (_tops[focus] + _heights[focus] / 2);
         Services.Log.Trace(() => $"Lyrics.Active {index} animate={animate} scrollTo={target:0} sheetOpacity={_sheet.Opacity:0.00}");
-        if (animate) Anim.To(_scroll, TranslateTransform.YProperty, target, strip ? 430 : 560);
+        if (animate) Anim.To(_scroll, TranslateTransform.YProperty, target, strip ? 430 : 560, fps: FrameRate);
         else Anim.Set(_scroll, TranslateTransform.YProperty, target);
     }
 
@@ -366,7 +390,7 @@ public sealed class LyricsView : Grid
         _ => 0.08
     };
 
-    private static double StripOpacity(int d) => d switch { 0 => 1.0, 1 => 0.55, _ => 0.0 };
+    private static double StripOpacity(int d, bool showNext) => d switch { 0 => 1.0, 1 when showNext => 0.55, _ => 0.0 };
 
     private void OnWheel(object sender, MouseWheelEventArgs e)
     {
@@ -380,7 +404,7 @@ public sealed class LyricsView : Grid
         var content = _sheet.ActualHeight;
         var min = Math.Min(0, ActualHeight * 0.85 - content);
         _manualOffset = Math.Clamp(offset, min, ActualHeight * 0.1);
-        Anim.To(_scroll, TranslateTransform.YProperty, _manualOffset + ActualHeight * 0.1, 260);
+        Anim.To(_scroll, TranslateTransform.YProperty, _manualOffset + ActualHeight * 0.1, 260, fps: FrameRate);
     }
 
     private static Brush EdgeFade(double height, double top, double bottom)

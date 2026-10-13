@@ -16,8 +16,9 @@
         <StackPanel x:Name="Toolbar" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
                     Margin="0,12,14,0" Opacity="0" IsHitTestVisible="False">
             <Button x:Name="LayoutButton" Style="{StaticResource IconButton}" Content="&#xE73F;" ToolTip="Switch layout" Margin="0,0,6,0" Click="OnToolbar" Tag="layout" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE7FC;" ToolTip="Gaming overlay" Margin="0,0,6,0" Click="OnToolbar" Tag="overlay" />
             <Button x:Name="PinButton" Style="{StaticResource IconButton}" Content="&#xE718;" ToolTip="Always on top" Margin="0,0,6,0" Click="OnToolbar" Tag="topmost" />
-            <Button Style="{StaticResource IconButton}" Content="&#xE72E;" ToolTip="Click-through (Ctrl+Alt+L)" Margin="0,0,6,0" Click="OnToolbar" Tag="lock" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE72E;" ToolTip="Click-through" Margin="0,0,6,0" Click="OnToolbar" Tag="lock" />
             <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Settings" Margin="0,0,6,0" Click="OnToolbar" Tag="settings" />
             <Button Style="{StaticResource IconButton}" Content="&#xE921;" ToolTip="Hide to tray" Click="OnToolbar" Tag="hide" />
         </StackPanel>

@@ -43,11 +43,14 @@ public partial class MainWindow : Window
             UseAeroCaptionButtons = false
         });
         SetupHost.Content = Setup;
+        // Shown programmatically (startup, hotkeys, the Mac, leaving the overlay) it must not steal focus;
+        // the app calls Activate() itself when the user asked for the window from the tray.
+        ShowActivated = false;
         MouseEnter += (_, _) => UpdateToolbar();
         MouseLeave += (_, _) => UpdateToolbar();
     }
 
-    /// <summary>Toolbar/hotkey commands: layout, topmost, lock, settings, hide.</summary>
+    /// <summary>Toolbar commands: layout, overlay, topmost, lock, settings, hide.</summary>
     public event Action<string>? CommandRequested;
 
     public SetupView Setup { get; } = new();
@@ -106,13 +109,6 @@ public partial class MainWindow : Window
         UpdateToolbar();
     }
 
-    /// <summary>Gives up Ctrl+Alt+L (before a replacement window registers it).</summary>
-    public void ReleaseHotKey()
-    {
-        var helper = new WindowInteropHelper(this);
-        if (helper.Handle != IntPtr.Zero) NativeMethods.UnregisterToggleHotKey(helper);
-    }
-
     public void CloseForReal()
     {
         _allowClose = true;
@@ -124,8 +120,6 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
         var helper = new WindowInteropHelper(this);
-        HwndSource.FromHwnd(helper.Handle)?.AddHook(WndProc);
-        if (!NativeMethods.RegisterToggleHotKey(helper)) Log.Write("Ctrl+Alt+L is taken by another app; use the tray menu for click-through.");
         if (!IsTransparent) NativeMethods.UseRoundedCorners(helper.Handle);
         NativeMethods.SetClickThrough(helper.Handle, _locked);
     }
@@ -139,18 +133,7 @@ public partial class MainWindow : Window
             CommandRequested?.Invoke("hide");
             return;
         }
-        NativeMethods.UnregisterToggleHotKey(new WindowInteropHelper(this));
         base.OnClosing(e);
-    }
-
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (msg == NativeMethods.WmHotKey && wParam.ToInt32() == NativeMethods.HotKeyId)
-        {
-            CommandRequested?.Invoke("lock");
-            handled = true;
-        }
-        return IntPtr.Zero;
     }
 
     private void OnToolbar(object sender, RoutedEventArgs e)
