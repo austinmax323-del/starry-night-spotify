@@ -5,3 +5,6 @@ Themes/*
 *.bak-*
 .DS_Store
 font-preview.html
+autorepair.log
+autorepair.err
+.autorepair-failed
