@@ -554,7 +554,7 @@ sfxEvery(() => {
   let t = null;
   const hide = e => {
     if (!e.target.closest?.(".Root__main-view")) return;
-    if (document.querySelector(".Root__globalNav:focus-within")) return; // typing in search: keep it
+    if (document.querySelector('[data-sfx="nav"]:focus-within')) return; // typing in search: keep it
     document.body.classList.add("sfx-scrolling");
     clearTimeout(t);
     t = setTimeout(() => document.body.classList.remove("sfx-scrolling"), 500);

@@ -58,6 +58,7 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 | --- | --- |
 | `Themes/StarryNight/user.css`, `color.ini`, `theme.js` | theme, colour schemes, star field |
 | `Extensions/starry-fx.js` | player, sky effects, shelves, switches |
+| `Extensions/starry-compat.js` | re-tags Spotify's scrambled class names (1.3.5+) with the ones the theme uses; **first place to look when an update breaks the layout** |
 | `Extensions/starry-intro.js` | WebGL startup intro |
 | `Extensions/theme-switcher.js` | palette menu (generated — edit `theme-switcher.template.js`, run `build-theme-switcher.py`) |
 | `Extensions/visualizer-button.js`, `hide-npv.js` | visualizer button, Now Playing panel off |
