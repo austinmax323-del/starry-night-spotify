@@ -1201,3 +1201,6 @@ section.sfx-newrel-row [data-encore-id="card"], section.sfx-newrel-row .sfx-shel
 
 /* Home chapters 01 + 02: blank, but keep their space */
 section[data-testid="component-shelf"].sfx-void { visibility: hidden !important; }
+
+/* home quick picks: first row only */
+.sfx-qp-hide { display: none !important; }

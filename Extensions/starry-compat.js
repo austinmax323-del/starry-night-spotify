@@ -104,7 +104,25 @@
     for (const s of document.querySelectorAll('[class*="x-settings-section"], [data-testid="settings-section"]')) add(s, "x-settings-section");
   }
 
-  function tick() { try { layout(); player(); pages(); } catch {} }
+  // Home quick-pick tiles: keep only the first row (hide the rest, however many columns the window has)
+  let qp = null;
+  function quickPicks() {
+    const hp = document.querySelector('[data-testid="home-page"]');
+    if (!hp) { qp = null; return; }
+    if (!qp?.isConnected) {
+      qp = null;
+      for (const d of hp.querySelectorAll("div")) {
+        if (d.children.length < 4 || d.children.length > 12) continue;
+        const st = getComputedStyle(d);
+        if (st.display === "grid" && d.getBoundingClientRect().height < 260 && d.querySelector(":scope > * a[href]")) { qp = d; break; }
+      }
+    }
+    if (!qp) return;
+    const cols = getComputedStyle(qp).gridTemplateColumns.split(" ").length;
+    [...qp.children].forEach((k, i) => { const hide = i >= cols; if (k.classList.contains("sfx-qp-hide") !== hide) k.classList.toggle("sfx-qp-hide", hide); });
+  }
+
+  function tick() { try { layout(); player(); pages(); quickPicks(); } catch {} }
   tick();
   const fast = setInterval(tick, 300);
   setTimeout(() => { clearInterval(fast); setInterval(tick, 700); }, 40000);
