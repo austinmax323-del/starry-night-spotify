@@ -493,6 +493,9 @@ sfxEvery(() => {
     n++;
     const ch = String(n).padStart(2, "0");
     if (h.dataset.ch !== ch) h.dataset.ch = ch;
+    // chapters 01 and 02 are blanked: no heading, no cards, no "Show all", space kept
+    const void_ = n <= 2;
+    if (sec.classList.contains("sfx-void") !== void_) sec.classList.toggle("sfx-void", void_);
   }
 }, 800);
 

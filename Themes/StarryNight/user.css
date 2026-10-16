@@ -1198,3 +1198,6 @@ section.sfx-newrel-row [data-encore-id="card"], section.sfx-newrel-row .sfx-shel
 
 /* Spotify 1.3.5 carries the per-page cover colour in inline --background-base tokens on two empty divs: drop both */
 .main-view-container div[style*="--background-base"]:empty { background: transparent !important; background-image: none !important; }
+
+/* Home chapters 01 + 02: blank, but keep their space */
+section[data-testid="component-shelf"].sfx-void { visibility: hidden !important; }
