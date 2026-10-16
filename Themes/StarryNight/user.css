@@ -1204,3 +1204,56 @@ section[data-testid="component-shelf"].sfx-void { visibility: hidden !important;
 
 /* home quick picks: first row only */
 .sfx-qp-hide { display: none !important; }
+
+/* ---------- Summon palette ---------- */
+.sfx-pal { position: fixed; inset: 0; z-index: 80000; display: flex; justify-content: center; align-items: flex-start; padding-top: 15vh;
+  background: radial-gradient(ellipse at 50% 30%, rgba(0,0,0,.28), rgba(0,0,0,.55)); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.sfx-pal[hidden] { display: none; }
+.sfx-pal.in { animation: sfx-pal-in .28s ease both; }
+.sfx-pal.out { animation: sfx-pal-out .24s ease both; }
+@keyframes sfx-pal-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sfx-pal-out { from { opacity: 1; } to { opacity: 0; } }
+.sfx-pal-box { width: min(820px, 72vw); display: flex; flex-direction: column; gap: 18px; }
+.sfx-pal-input {
+  width: 100%; box-sizing: border-box; padding: 18px 28px; border-radius: 999px; outline: none; color: #fff;
+  background: rgba(14,14,20,.62); border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(24px) saturate(1.3); -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(var(--spice-rgb-button), .10);
+  font-family: "Big Caslon", serif !important; font-size: 26px; letter-spacing: -.01em;
+}
+.sfx-pal-input::placeholder { color: rgba(255,255,255,.4); font-style: italic; }
+.sfx-pal-input:focus { border-color: rgba(var(--spice-rgb-button), .55); }
+.sfx-pal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.sfx-pal-chip {
+  padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); cursor: pointer; color: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.05); font-family: "Futura", sans-serif !important; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  animation: sfx-bloom .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 30ms); transition: background .2s, border-color .2s;
+}
+.sfx-pal-chip:hover, .sfx-pal-chip:focus { outline: none; background: rgba(var(--spice-rgb-button), .18); border-color: rgba(var(--spice-rgb-button), .5); }
+.sfx-pal-results { display: flex; flex-direction: column; gap: 18px; max-height: 56vh; overflow-y: auto; padding: 4px 2px 20px; scrollbar-width: none; }
+.sfx-pal-results::-webkit-scrollbar { display: none; }
+.sfx-pal-title { font-family: "Futura", sans-serif !important; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.5); margin: 0 0 8px 6px; }
+.sfx-pal-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.sfx-pal-card {
+  display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer; border: 1px solid rgba(255,255,255,.08); color: #fff;
+  background: rgba(14,14,20,.55); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; padding: 10px 14px 10px 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  animation: sfx-bloom .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 45ms); transition: border-color .2s, transform .2s, background .2s;
+}
+@keyframes sfx-bloom { from { opacity: 0; transform: translateY(16px) scale(.94); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+.sfx-pal-card:hover, .sfx-pal-card:focus { outline: none; transform: translateY(-2px); border-color: rgba(var(--spice-rgb-button), .5); background: rgba(var(--spice-rgb-button), .10); }
+.sfx-pal-card img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; flex: none; }
+.sfx-pal-card b { font-weight: 600; font-size: 14px; display: block; }
+.sfx-pal-card i { font-style: normal; font-size: 12px; opacity: .6; display: block; }
+.sfx-pal-card.track { width: calc(50% - 5px); box-sizing: border-box; min-width: 0; }
+.sfx-pal-card.track span { min-width: 0; } .sfx-pal-card.track b, .sfx-pal-card.track i { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sfx-pal-card.artist { flex-direction: column; width: 112px; padding: 14px 10px 12px; text-align: center; }
+.sfx-pal-card.artist img { width: 72px; height: 72px; border-radius: 50%; box-shadow: 0 0 0 3px #0c0c0c, 0 0 0 4px rgba(255,255,255,.14); }
+.sfx-pal-card.cover { flex-direction: column; align-items: flex-start; width: 132px; padding: 10px; }
+.sfx-pal-card.cover img { width: 112px; height: 112px; border-radius: 10px; }
+.sfx-pal-card.cover b, .sfx-pal-card.cover i { max-width: 112px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sfx-pal-empty { text-align: center; opacity: .5; font-family: "Big Caslon", serif; font-size: 22px; padding: 30px; }
+
+/* ---------- Liked-songs galaxy ---------- */
+.sfx-liked-sky { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: .18; transition: opacity 1.4s ease; }
+body.sfx-on-home .sfx-liked-sky { opacity: 1; }

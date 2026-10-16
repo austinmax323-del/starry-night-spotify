@@ -48,6 +48,8 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Story card (<kbd>S</kbd>): saves a 1080×1920 "now playing" image to Downloads and copies it.
 - Your five most-liked artists hang in the sky as constellations; the one playing lights up.
 - Queue opens as a floating glass panel; settings get glass sections.
+- Summon palette (<kbd>/</kbd> or <kbd>⌘K</kbd>, or click the dock's search): search songs, artists, playlists and albums as cards that bloom into the sky; shuffle Liked Songs, resume, or play a mood from your likes. <kbd>Esc</kbd> closes it.
+- Liked-songs galaxy: every liked song is a star, placed by the date you liked it (recent ones glow); strongest on the home page.
 - Every effect can be switched off from the palette menu.
 - Clean recording mode (<kbd>H</kbd>): hides the dock, scrollbars and your name for footage.
 - Effects pause when Spotify is in the background; weather, dust and twinkle switch off on battery.
@@ -59,6 +61,7 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 | `Themes/StarryNight/user.css`, `color.ini`, `theme.js` | theme, colour schemes, star field |
 | `Extensions/starry-fx.js` | player, sky effects, shelves, switches |
 | `Extensions/starry-compat.js` | re-tags Spotify's scrambled class names (1.3.5+) with the ones the theme uses; **first place to look when an update breaks the layout** |
+| `Extensions/starry-palette.js` | summon palette + liked-songs galaxy |
 | `Extensions/starry-intro.js` | WebGL startup intro |
 | `Extensions/theme-switcher.js` | palette menu (generated — edit `theme-switcher.template.js`, run `build-theme-switcher.py`) |
 | `Extensions/visualizer-button.js`, `hide-npv.js` | visualizer button, Now Playing panel off |
