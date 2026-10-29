@@ -49,7 +49,7 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Your five most-liked artists hang in the sky as constellations; the one playing lights up.
 - Queue opens as a floating glass panel; settings get glass sections.
 - Summon palette (<kbd>/</kbd> or <kbd>⌘K</kbd>, or click the dock's search): search songs, artists, playlists and albums as cards that bloom into the sky; shuffle Liked Songs, resume, or play a mood from your likes. <kbd>Esc</kbd> closes it.
-- Liked-songs galaxy: every liked song is a star, placed by the date you liked it (recent ones glow); strongest on the home page.
+- Liked-songs galaxy: every liked song is a star, placed by the date you liked it (recent ones glow); hover a star for the song and the day you liked it, click to play it, hold <kbd>Y</kbd> to colour stars by year.
 - Every effect can be switched off from the palette menu.
 - Clean recording mode (<kbd>H</kbd>): hides the dock, scrollbars and your name for footage.
 - Effects pause when Spotify is in the background; weather, dust and twinkle switch off on battery.

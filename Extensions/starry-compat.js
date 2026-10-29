@@ -45,9 +45,9 @@
     const [left, center, right] = inner ? inner.children : [];
     add(left, "main-nowPlayingBar-left"); add(center, "main-nowPlayingBar-center"); add(right, "main-nowPlayingBar-right");
     add(right?.firstElementChild, "main-nowPlayingBar-extraControls");
-    const widget = bar.querySelector('[data-testid="now-playing-widget"]');
+    const widget = bar.querySelector('[data-testid="now-playing-widget"], [data-testid="now-playing-widget-v2"]');
     add(widget, "main-nowPlayingWidget-nowPlaying");
-    const slot = bar.querySelector('[data-testid="CoverSlotCollapsed__container"]');
+    const slot = bar.querySelector('[data-testid="CoverSlotCollapsed__container"], [data-testid="cover-art-container"]');
     add(slot, "main-coverSlotCollapsed-container", "main-nowPlayingWidget-coverArt");
     const img = slot?.querySelector("img");
     if (img) { add(img, "cover-art-image", "main-image-image"); add(img.parentElement, "cover-art"); }
@@ -118,9 +118,39 @@
       }
     }
     if (!qp) return;
+    add(qp, "sfx-qp-grid");
     const cols = getComputedStyle(qp).gridTemplateColumns.split(" ").length;
     [...qp.children].forEach((k, i) => { const hide = i >= cols; if (k.classList.contains("sfx-qp-hide") !== hide) k.classList.toggle("sfx-qp-hide", hide); });
   }
+
+
+  // Health check: after the page settles, verify the pieces the theme depends on exist and say what is missing.
+  // (Spotify renames its elements in updates; this turns a silent half-broken look into a message naming the culprit.)
+  function health() {
+    const q = s => document.querySelector(s);
+    const art = q(".Root__now-playing-bar .cover-art");
+    const checks = {
+      "page layout": !!q(".Root__top-container"),
+      "floating dock": !!q('[data-sfx="nav"]'),
+      "star sky": document.querySelectorAll(".starrynight-bg-container > div").length > 50,
+      "player bar": !!q(".Root__now-playing-bar .main-nowPlayingBar-container"),
+      "record / cover": !!art && !!art.querySelector("img"),
+      "record size": !!art && art.getBoundingClientRect().width > 150,
+      "player controls": !!q(".player-controls"),
+      "track title": !!q(".main-trackInfo-name")
+    };
+    const missing = Object.keys(checks).filter(k => !checks[k]);
+    window.sfxHealthReport = { at: Date.now(), ok: !missing.length, missing, checks };
+    try { localStorage.setItem("sfx-health", JSON.stringify(window.sfxHealthReport)); } catch {}
+    if (missing.length) {
+      console.warn("[starry] missing:", missing.join(", "));
+      Spicetify.showNotification?.(`Starry Night: ${missing.join(", ")} not found, Spotify's layout changed (see starry-compat.js)`, true, 9000);
+    }
+    return window.sfxHealthReport;
+  }
+  window.sfxHealth = health;
+  setTimeout(health, 30000);
+  setTimeout(() => { if (!window.sfxHealthReport?.ok) health(); }, 120000);
 
   function tick() { try { layout(); player(); pages(); quickPicks(); } catch {} }
   tick();

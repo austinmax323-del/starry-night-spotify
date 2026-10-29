@@ -96,6 +96,7 @@ function shoot(x, y, delay = 0) {
 // Click on empty sky -> shooting star
 document.addEventListener("click", e => {
   if (e.target.closest("button, a, input, textarea, img, [role='row'], [role='button'], [draggable='true'], .cover-art, .main-trackList-row, .main-card-card")) return;
+  if (window.sfxStarHover != null) return;
   if (window.sfxOn?.("meteors") !== false) shoot(e.clientX, e.clientY);
 }, true);
 
