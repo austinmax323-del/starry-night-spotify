@@ -148,107 +148,214 @@
   window.sfxPalette = open;
 
   // ---------- liked-songs galaxy ----------
+  // A rotating wrapper holds: the static star canvas, a highlight canvas (playlist / artist hover), year labels and the now-playing ring.
+  // Everything inside moves with one compositor-only CSS rotation (1 turn / 20 min); hit-testing applies the same angle in JS.
   const hash = (s, salt) => { let h = 2166136261 ^ salt; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
-  let tracks = null, stars = [], yearMode = false;
+  const SPIN_MS = 20 * 60 * 1000;
   const yearHue = (y, y0, y1) => 215 - ((y - y0) / Math.max(1, y1 - y0)) * 175; // old = cool blue, new = gold
-  function draw(cv) {
+  const yearOf = t => new Date(t.addedAt).getFullYear();
+  let tracks = null, pos = [], idxOf = new Map(), yearMode = false;
+  let geo = { cx: 0, cy: 0, R: 0 }, wrap = null, cv = null, ov = null, labels = null, nowEl = null;
+  let lit = null, litSrc = null, curArtist = null, curRow = null;
+  const plCache = new Map();
+
+  const spinAngle = () => { const an = wrap?.getAnimations?.()[0]; const t = an ? Number(an.currentTime) || 0 : 0; return (t % SPIN_MS) / SPIN_MS * Math.PI * 2; };
+
+  function ensure() {
+    const host = document.querySelector(".Root__top-container");
+    if (!host) return false;
+    wrap = host.querySelector(":scope > .sfx-galaxy");
+    if (!wrap) {
+      wrap = document.createElement("div"); wrap.className = "sfx-galaxy";
+      wrap.innerHTML = '<canvas class="sfx-liked-sky"></canvas><canvas class="sfx-galaxy-lit"></canvas><div class="sfx-galaxy-labels"></div><div class="sfx-now-star" hidden></div>';
+      host.prepend(wrap);
+    }
+    cv = wrap.querySelector(".sfx-liked-sky"); ov = wrap.querySelector(".sfx-galaxy-lit");
+    labels = wrap.querySelector(".sfx-galaxy-labels"); nowEl = wrap.querySelector(".sfx-now-star");
+    return true;
+  }
+
+  function point(u, id, arm0) {
+    const arm = arm0 ? 0 : Math.floor(hash(id, 1) * 3) * (Math.PI * 2 / 3);
+    const ang = u * 8.5 + arm + (arm0 ? 0 : (hash(id, 2) - 0.5) * (0.35 + (1 - u) * 1.1));
+    const rad = geo.R * (0.04 + 0.96 * Math.pow(u, 0.85)) + (arm0 ? 0 : (hash(id, 3) - 0.5) * geo.R * 0.1);
+    const rot = -0.35;
+    return [geo.cx + (Math.cos(ang) * rad * Math.cos(rot) - Math.sin(ang) * rad * 0.58 * Math.sin(rot)),
+            geo.cy + (Math.cos(ang) * rad * Math.sin(rot) + Math.sin(ang) * rad * 0.58 * Math.cos(rot))];
+  }
+
+  function sizeCanvas(c, W, H, dpr) { c.width = W * dpr; c.height = H * dpr; const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H); return x; }
+
+  function paint() {
     if (!tracks?.length) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
-    const x = cv.getContext("2d"); x.scale(dpr, dpr); x.clearRect(0, 0, W, H);
-    // centre the galaxy on the open page area (the main view), not the whole window
+    if (!ensure()) return setTimeout(paint, 600);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight, n = tracks.length;
     const mv = document.querySelector(".Root__main-view")?.getBoundingClientRect();
     const mx = mv ? mv.left : 0, mw = mv ? mv.width : W;
-    const n = tracks.length, cx = mx + mw * 0.5, cy = H * 0.56, R = Math.min(mw * 0.42, H * 0.62), rot = -0.35;
-    const y0 = new Date(tracks[0].addedAt).getFullYear(), y1 = new Date(tracks[n - 1].addedAt).getFullYear();
-    stars = new Array(n);
+    geo = { cx: mx + mw * 0.5, cy: H * 0.56, R: Math.min(mw * 0.42, H * 0.62) };
+    wrap.style.transformOrigin = `${geo.cx}px ${geo.cy}px`;
+    const x = sizeCanvas(cv, W, H, dpr); sizeCanvas(ov, W, H, dpr);
+    const y0 = yearOf(tracks[0]), y1 = yearOf(tracks[n - 1]);
+    pos = new Array(n);
     for (let i = 0; i < n; i++) {
-      const u = i / Math.max(1, n - 1), id = tracks[i].uri;
-      const arm = Math.floor(hash(id, 1) * 3) * (Math.PI * 2 / 3);
-      const ang = u * 8.5 + arm + (hash(id, 2) - 0.5) * (0.35 + (1 - u) * 1.1);
-      const rad = R * (0.04 + 0.96 * Math.pow(u, 0.85)) + (hash(id, 3) - 0.5) * R * 0.1;
-      const px = cx + (Math.cos(ang) * rad * Math.cos(rot) - Math.sin(ang) * rad * 0.58 * Math.sin(rot));
-      const py = cy + (Math.cos(ang) * rad * Math.sin(rot) + Math.sin(ang) * rad * 0.58 * Math.cos(rot));
-      stars[i] = [px, py];
+      const u = i / Math.max(1, n - 1);
+      const [px, py] = point(u, tracks[i].uri);
+      pos[i] = [px, py];
       const recent = i >= n - 40;
       const a = (yearMode ? 0.5 : 0.2) + 0.55 * u * u + (recent ? 0.25 : 0);
       const sz = (yearMode ? 0.9 : 0.5) + 1.1 * u * u * u + (recent ? 0.9 : 0);
       if (recent && !yearMode) { x.shadowColor = "rgba(255,200,110,.9)"; x.shadowBlur = 10; } else x.shadowBlur = 0;
-      if (yearMode) x.fillStyle = `hsla(${yearHue(new Date(tracks[i].addedAt).getFullYear(), y0, y1)},85%,68%,${Math.min(1, a)})`;
-      else x.fillStyle = `rgba(255,${recent ? 226 : 214},${recent ? 150 : 140},${Math.min(1, a)})`;
+      x.fillStyle = yearMode ? `hsla(${yearHue(yearOf(tracks[i]), y0, y1)},85%,68%,${Math.min(1, a)})` : `rgba(255,${recent ? 226 : 214},${recent ? 150 : 140},${Math.min(1, a)})`;
       x.beginPath(); x.arc(px, py, sz, 0, 6.2832); x.fill();
     }
-    legend(y0, y1);
+    // year labels along the first spiral arm, counter-rotated so they stay upright while the galaxy turns
+    labels.innerHTML = "";
+    const an = wrap.getAnimations?.()[0], delay = -(an ? Number(an.currentTime) || 0 : 0);
+    let last = -1;
+    for (let i = 0; i < n; i++) {
+      const y = yearOf(tracks[i]); if (y === last) continue; last = y;
+      const u = i / Math.max(1, n - 1), [lx, ly] = point(u, "", true);
+      const dx = lx - geo.cx, dy = ly - geo.cy, d = Math.hypot(dx, dy) || 1, off = 16;
+      const el = document.createElement("div");
+      el.className = "sfx-galaxy-year"; el.textContent = y;
+      el.style.left = (lx + dx / d * off) + "px"; el.style.top = (ly + dy / d * off) + "px";
+      el.style.setProperty("--yc", `hsl(${yearHue(y, y0, y1)},85%,68%)`);
+      el.style.animationDelay = delay + "ms";
+      labels.appendChild(el);
+    }
+    wrap.classList.toggle("years", yearMode);
+    drawLit(); updateNow();
   }
-  function legend(y0, y1) {
-    let el = document.querySelector(".sfx-year-legend");
-    if (!yearMode) { el?.remove(); return; }
-    if (!el) { el = document.createElement("div"); el.className = "sfx-year-legend"; document.body.appendChild(el); }
-    const counts = {};
-    for (const t of tracks) { const y = new Date(t.addedAt).getFullYear(); counts[y] = (counts[y] || 0) + 1; }
-    el.innerHTML = Object.keys(counts).map(y => `<div><i style="background:hsl(${yearHue(+y, y0, y1)},85%,68%)"></i>${y}<span>${counts[y]}</span></div>`).join("");
+
+  function drawLit() {
+    if (!ov || !pos.length) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
+    const x = sizeCanvas(ov, W, H, dpr);
+    wrap.classList.toggle("lit", !!lit?.size);
+    if (!lit?.size) return;
+    const ids = [...lit].sort((a, b) => a - b);
+    if (ids.length <= 160) {                                   // faint chain through the songs, oldest to newest
+      x.strokeStyle = "rgba(255,226,170,.16)"; x.lineWidth = 0.7; x.beginPath();
+      ids.forEach((i, k) => k ? x.lineTo(pos[i][0], pos[i][1]) : x.moveTo(pos[i][0], pos[i][1]));
+      x.stroke();
+    }
+    x.shadowColor = "rgba(255,220,150,.95)"; x.shadowBlur = 9; x.fillStyle = "#fff0cf";
+    for (const i of ids) { x.beginPath(); x.arc(pos[i][0], pos[i][1], 2.1, 0, 6.2832); x.fill(); }
   }
-  const redraw = () => { const cv = document.querySelector("canvas.sfx-liked-sky"); if (cv) draw(cv); };
+  function setLit(set, src) { lit = set; litSrc = src; drawLit(); }
+  function clearLit(src) { if (src && litSrc !== src) return; lit = null; litSrc = null; drawLit(); }
+
+  function updateNow() {
+    if (!nowEl) return;
+    const i = idxOf.get(Spicetify.Player.data?.item?.uri);
+    if (i == null || !pos[i]) { nowEl.hidden = true; return; }
+    nowEl.hidden = false; nowEl.style.left = pos[i][0] + "px"; nowEl.style.top = pos[i][1] + "px";
+  }
+  Spicetify.Player.addEventListener("songchange", () => setTimeout(updateNow, 300));
+
+  async function load() {
+    try {
+      const r = await Spicetify.Platform.LibraryAPI.getTracks({ limit: 3000, offset: 0 });
+      tracks = (r.items || r).filter(t => t.addedAt && t.uri).sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+      idxOf = new Map(tracks.map((t, i) => [t.uri, i]));
+    } catch { return; }
+    paint();
+  }
+
   // hold Y: colour the stars by the year you liked them
   document.addEventListener("keydown", e => {
     if (e.repeat || e.key.toLowerCase() !== "y" || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest?.("input, textarea, [contenteditable='true']") || !root.hidden) return;
-    yearMode = true; redraw();
+    yearMode = true; paint();
   });
-  document.addEventListener("keyup", e => { if (e.key.toLowerCase() === "y" && yearMode) { yearMode = false; redraw(); } });
-  window.addEventListener("blur", () => { if (yearMode) { yearMode = false; redraw(); } });
+  const endYear = () => { if (yearMode) { yearMode = false; paint(); } };
+  document.addEventListener("keyup", e => { if (e.key.toLowerCase() === "y") endYear(); });
+  window.addEventListener("blur", endYear);
 
-  // hover a star: show the song and the day you liked it; click to play it
+  // hover a library playlist: its songs that you liked light up and are chained together
+  const rowUri = el => {
+    const row = el?.closest?.('.Root__nav-bar [role="row"]');
+    const id = row?.querySelector('[aria-labelledby^="listrow-title-"]')?.getAttribute("aria-labelledby") || "";
+    const m = id.match(/listrow-title-(spotify:playlist:[A-Za-z0-9]+)/);
+    return m ? [row, m[1]] : [row, null];
+  };
+  async function showPlaylist(uri) {
+    let set = plCache.get(uri);
+    if (!set) {
+      try {
+        const c = await Spicetify.Platform.PlaylistAPI.getContents(uri, { limit: 3000 });
+        set = new Set((c.items || []).map(i => idxOf.get(i.uri)).filter(i => i != null));
+        plCache.set(uri, set);
+      } catch { return; }
+    }
+    if (curRow && rowUriCache === uri && set.size) setLit(set, "playlist");
+  }
+  let rowUriCache = null;
+  document.addEventListener("mouseover", e => {
+    if (!tracks) return;
+    const [row, uri] = rowUri(e.target);
+    if (row === curRow) return;
+    curRow = row; rowUriCache = uri;
+    if (!row || !uri) { clearLit("playlist"); return; }
+    showPlaylist(uri);
+  }, true);
+
+  // hover a constellation (an artist you like) or a star
   const tip = document.createElement("div");
   tip.className = "sfx-star-tip"; tip.hidden = true;
   document.body.appendChild(tip);
   window.sfxStarHover = null;
   let moving = false;
+  function setArtist(name) {
+    if (name === curArtist) return;
+    curArtist = name;
+    for (const f of document.querySelectorAll(".sfx-con")) f.classList.toggle("hov", f.dataset.artist === name);
+    if (!name) return clearLit("artist");
+    const set = new Set();
+    tracks.forEach((t, i) => { if ((t.artists || []).some(a => a.name === name)) set.add(i); });
+    set.size ? setLit(set, "artist") : clearLit("artist");
+  }
   const onMove = e => {
     if (moving) return; moving = true;
     requestAnimationFrame(() => {
       moving = false;
-      let hit = null;
-      if (document.body.classList.contains("sfx-on-home") && root.hidden && stars.length &&
-          !e.target.closest?.('button, a, input, img, [role="button"], [data-encore-id="card"], [data-sfx="nav"], .Root__now-playing-bar, .Root__nav-bar')) {
-        let best = 13 * 13;
-        for (let i = 0; i < stars.length; i++) {
-          const dx = stars[i][0] - e.clientX, dy = stars[i][1] - e.clientY, d = dx * dx + dy * dy;
-          if (d < best) { best = d; hit = i; }
+      const home = document.body.classList.contains("sfx-on-home") && root.hidden && pos.length;
+      let hit = null, artist = null;
+      if (home) {
+        for (const f of document.querySelectorAll(".sfx-con")) {
+          const r = f.getBoundingClientRect();
+          if (e.clientX >= r.left - 6 && e.clientX <= r.right + 6 && e.clientY >= r.top - 6 && e.clientY <= r.bottom + 6) { artist = f.dataset.artist; break; }
+        }
+        if (!artist && !e.target.closest?.('button, a, input, img, [role="button"], [data-encore-id="card"], [data-sfx="nav"], .Root__now-playing-bar, .Root__nav-bar')) {
+          const th = spinAngle(), c = Math.cos(th), sn = Math.sin(th);
+          let best = 13 * 13;
+          for (let i = 0; i < pos.length; i++) {
+            const dx0 = pos[i][0] - geo.cx, dy0 = pos[i][1] - geo.cy;
+            const dx = geo.cx + dx0 * c - dy0 * sn - e.clientX, dy = geo.cy + dx0 * sn + dy0 * c - e.clientY, d = dx * dx + dy * dy;
+            if (d < best) { best = d; hit = i; }
+          }
+          if (hit != null) { const dx0 = pos[hit][0] - geo.cx, dy0 = pos[hit][1] - geo.cy; tip._xy = [geo.cx + dx0 * c - dy0 * sn, geo.cy + dx0 * sn + dy0 * c]; }
         }
       }
+      if (tracks) setArtist(home ? artist : null);
       window.sfxStarHover = hit;
       document.body.classList.toggle("sfx-star-hover", hit != null);
       if (hit == null) { tip.hidden = true; return; }
       const t = tracks[hit], d = new Date(t.addedAt);
       tip.innerHTML = `<b>${esc(t.name)}</b><i>${esc((t.artists || []).map(a => a.name).join(", "))}</i><span>liked ${d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>`;
       tip.hidden = false;
-      tip.style.left = Math.min(innerWidth - 260, stars[hit][0] + 14) + "px"; tip.style.top = (stars[hit][1] + 14) + "px";
+      tip.style.left = Math.min(innerWidth - 260, tip._xy[0] + 14) + "px"; tip.style.top = (tip._xy[1] + 14) + "px";
     });
   };
   document.addEventListener("pointermove", onMove, true);
   document.addEventListener("mousemove", onMove, true);
-  document.addEventListener("mouseleave", () => { window.sfxStarHover = null; tip.hidden = true; document.body.classList.remove("sfx-star-hover"); });
+  document.addEventListener("mouseleave", () => { window.sfxStarHover = null; tip.hidden = true; document.body.classList.remove("sfx-star-hover"); setArtist(null); });
   document.addEventListener("click", e => {
     if (window.sfxStarHover == null) return;
     const t = tracks[window.sfxStarHover];
     if (t) { e.preventDefault(); e.stopPropagation(); Spicetify.Player.playUri(t.uri); }
   }, true);
 
-  async function load() {
-    try {
-      const r = await Spicetify.Platform.LibraryAPI.getTracks({ limit: 3000, offset: 0 });
-      tracks = (r.items || r).filter(t => t.addedAt && t.uri).sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
-    } catch { return; }
-    paint();
-  }
-  function paint() {
-    const host = document.querySelector(".Root__top-container");
-    if (!host) return setTimeout(paint, 600);
-    let cv = host.querySelector(":scope > canvas.sfx-liked-sky");
-    if (!cv) { cv = document.createElement("canvas"); cv.className = "sfx-liked-sky"; host.prepend(cv); }
-    draw(cv);
-  }
   let rz = null;
   window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(paint, 500); });
   setTimeout(load, 2500);

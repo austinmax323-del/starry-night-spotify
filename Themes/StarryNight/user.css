@@ -1255,8 +1255,29 @@ section[data-testid="component-shelf"].sfx-void { visibility: hidden !important;
 .sfx-pal-empty { text-align: center; opacity: .5; font-family: "Big Caslon", serif; font-size: 22px; padding: 30px; }
 
 /* ---------- Liked-songs galaxy ---------- */
-.sfx-liked-sky { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: .18; transition: opacity 1.4s ease; }
-body.sfx-on-home .sfx-liked-sky { opacity: 1; }
+.sfx-galaxy { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .18; transition: opacity 1.4s ease;
+  animation: sfx-galaxy-spin 1200s linear infinite; will-change: transform; }
+body.sfx-on-home .sfx-galaxy { opacity: 1; }
+body:not(.sfx-on-home) .sfx-galaxy { animation-play-state: paused; }
+body.sfx-battery .sfx-galaxy, body.sfx-off-galaxy .sfx-galaxy { animation: none; }
+body.sfx-off-galaxy .sfx-galaxy { display: none; }
+@keyframes sfx-galaxy-spin { to { transform: rotate(360deg); } }
+.sfx-galaxy canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sfx-galaxy .sfx-liked-sky { transition: opacity .5s ease; }
+.sfx-galaxy.lit .sfx-liked-sky { opacity: .4; }
+/* year labels: upright (counter-rotated), faint at rest, coloured while Y is held */
+.sfx-galaxy-year { position: absolute; translate: -50% -50%; font-family: "Futura", sans-serif; font-size: 12px; letter-spacing: .3em; color: rgba(255,255,255,.28);
+  animation: sfx-galaxy-unspin 1200s linear infinite; transition: color .4s, opacity .4s; white-space: nowrap; }
+.sfx-galaxy.years .sfx-galaxy-year { color: var(--yc); opacity: 1; text-shadow: 0 0 10px var(--yc); }
+body.sfx-battery .sfx-galaxy-year { animation: none; }
+@keyframes sfx-galaxy-unspin { to { rotate: -360deg; } }
+/* the song playing right now, if it is one of your likes */
+.sfx-now-star { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 1.5px solid rgba(255,240,200,.9);
+  box-shadow: 0 0 14px rgba(255,220,150,.8); animation: sfx-now-pulse 2.2s ease-out infinite; }
+.sfx-now-star[hidden] { display: none; }
+@keyframes sfx-now-pulse { 0% { transform: scale(.7); opacity: 1; } 100% { transform: scale(3.4); opacity: 0; } }
+/* hovered artist constellation */
+.sfx-con.hov { opacity: .95; filter: drop-shadow(0 0 8px rgba(255,226,170,.8)); }
 
 /* ---------- Home quick picks: don't stretch across ultra-wide windows ---------- */
 .sfx-qp-grid { max-width: 1180px; }
