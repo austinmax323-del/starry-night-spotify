@@ -1298,3 +1298,58 @@ body.sfx-star-hover, body.sfx-star-hover * { cursor: pointer !important; }
 .sfx-year-legend div { display: flex; align-items: center; gap: 10px; }
 .sfx-year-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .sfx-year-legend span { opacity: .45; margin-left: auto; padding-left: 14px; }
+
+/* =================== Premade assets + real shadows (see ASSETS.md for sources and licenses) =================== */
+
+/* Planet: a real Hubble photo of Saturn (public domain) instead of the CSS sphere */
+.sfx-planet { width: 150px !important; height: 75px !important; top: 52px !important; right: 300px !important;
+  background: url(starry/saturn.png) center / contain no-repeat;
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.7)) drop-shadow(0 0 22px rgba(255,225,170,.18)); }
+.sfx-planet-surface, .sfx-planet-ring { display: none !important; }
+body.sfx-cinema .sfx-planet { width: 340px !important; height: 170px !important; top: 9vh !important; left: 8vw !important; right: auto !important; }
+@media (max-width: 1280px) { .sfx-planet { width: 110px !important; height: 55px !important; right: 230px !important; } }
+
+/* Record surface: real macro photo of vinyl grooves (public domain) overlaid on the disc, label area left clear */
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art::after {
+  background-image:
+    url(starry/grooves.jpg),
+    conic-gradient(from 40deg, transparent 0 8%, rgba(255,255,255,.10) 12%, transparent 18% 50%, rgba(255,255,255,.10) 62%, transparent 68%),
+    repeating-radial-gradient(circle, rgba(255,255,255,.05) 0 1px, transparent 1px 3px),
+    radial-gradient(circle, #0b0b0b 0 2.2%, rgba(255,255,255,.25) 2.4% 2.8%, transparent 3% 21%, rgba(0,0,0,.6) 21.2%, #0c0c0c 22%) !important;
+  background-size: cover, auto, auto, auto !important; background-position: center !important;
+  background-blend-mode: overlay, normal, normal, normal !important;
+  -webkit-mask-image: radial-gradient(circle, #000 0 3.2%, transparent 3.4% 21%, #000 21.4%); mask-image: radial-gradient(circle, #000 0 3.2%, transparent 3.4% 21%, #000 21.4%);
+}
+/* Shadows under the record and tonearm */
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art {
+  box-shadow: 0 0 12px 1px rgba(var(--spice-rgb-button), .30), 0 6px 10px -2px rgba(0,0,0,.55), 0 28px 48px -10px rgba(0,0,0,.8) !important;
+}
+.Root__now-playing-bar .main-nowPlayingWidget-coverArt .cover-art::before { box-shadow: 4px 10px 16px rgba(0,0,0,.7), 1px 2px 3px rgba(0,0,0,.6); }
+
+/* Layered shadows (contact + soft + ambient) on the surfaces that float over the sky */
+[data-sfx="nav"] { box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 18px rgba(0,0,0,.5), 0 28px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07) !important; }
+.sfx-card-imageWrapper img, .sfx-card-imageWrapper { box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 16px rgba(0,0,0,.45), 0 22px 40px rgba(0,0,0,.4); border-radius: 6px; }
+.sfx-qp-grid > * { box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 8px 18px rgba(0,0,0,.35); border-radius: 8px; }
+.main-entityHeader-image, .main-entityHeader-imageContainer img { box-shadow: 0 2px 4px rgba(0,0,0,.5), 0 14px 30px rgba(0,0,0,.55), 0 36px 70px rgba(0,0,0,.5) !important; }
+.main-trackList-rowSectionStart img { box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 10px rgba(0,0,0,.45); }
+.Root__nav-bar [role="row"] img { box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 5px 12px rgba(0,0,0,.45); }
+.sfx-pal-input, .sfx-pal-card { box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 10px 24px rgba(0,0,0,.45), 0 30px 60px rgba(0,0,0,.4); }
+body.sfx-queue-open .Root__right-sidebar { box-shadow: 0 2px 4px rgba(0,0,0,.5), 0 18px 40px rgba(0,0,0,.55), 0 50px 90px rgba(0,0,0,.5) !important; }
+ul[role="menu"] { box-shadow: 0 2px 4px rgba(0,0,0,.5), 0 16px 36px rgba(0,0,0,.6), 0 40px 80px rgba(0,0,0,.5) !important; }
+
+/* Dock icons: Lucide (ISC license) via CSS mask, replacing Spotify's own glyphs */
+[data-sfx="nav"] button[aria-label="Go back"] svg, [data-sfx="nav"] button[aria-label="Go forward"] svg, [data-sfx="nav"] button[aria-label="Marketplace"] svg,
+[data-sfx="nav"] button[aria-label="Home"] svg, [data-sfx="nav"] button[aria-label="Search"] svg, [data-sfx="nav"] button[aria-label="Visualizer"] svg { visibility: hidden; }
+[data-sfx="nav"] button[aria-label="Go back"], [data-sfx="nav"] button[aria-label="Go forward"], [data-sfx="nav"] button[aria-label="Marketplace"],
+[data-sfx="nav"] button[aria-label="Home"], [data-sfx="nav"] button[aria-label="Search"], [data-sfx="nav"] button[aria-label="Visualizer"] { position: relative; }
+[data-sfx="nav"] button[aria-label="Go back"]::after, [data-sfx="nav"] button[aria-label="Go forward"]::after, [data-sfx="nav"] button[aria-label="Marketplace"]::after,
+[data-sfx="nav"] button[aria-label="Home"]::after, [data-sfx="nav"] button[aria-label="Search"]::after, [data-sfx="nav"] button[aria-label="Visualizer"]::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; background: currentColor; pointer-events: none;
+  -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat;
+}
+[data-sfx="nav"] button[aria-label="Go back"]::after { --ico: url(starry/icons/arrow-left.svg); }
+[data-sfx="nav"] button[aria-label="Go forward"]::after { --ico: url(starry/icons/arrow-right.svg); }
+[data-sfx="nav"] button[aria-label="Marketplace"]::after { --ico: url(starry/icons/shopping-cart.svg); }
+[data-sfx="nav"] button[aria-label="Home"]::after { --ico: url(starry/icons/house.svg); }
+[data-sfx="nav"] button[aria-label="Search"]::after { --ico: url(starry/icons/search.svg); }
+[data-sfx="nav"] button[aria-label="Visualizer"]::after { --ico: url(starry/icons/audio-lines.svg); }

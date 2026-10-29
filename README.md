@@ -54,6 +54,8 @@ A night sky behind everything, a spinning vinyl player, a WebGL startup intro, a
 - Clean recording mode (<kbd>H</kbd>): hides the dock, scrollbars and your name for footage.
 - Effects pause when Spotify is in the background; weather, dust and twinkle switch off on battery.
 
+Photos and icons are premade and free to use (Hubble Saturn, a macro photo of real vinyl grooves, Lucide icons): see [ASSETS.md](ASSETS.md).
+
 ## Files
 
 | Path | What |

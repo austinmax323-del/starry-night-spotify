@@ -26,6 +26,11 @@ for e in ${=exts}; do
   [[ -f "$XPUI/extensions/$e" ]] && pass "extension $e" || fail "extension $e not installed"
 done
 
+# Theme assets (copied by spicetify when overwrite_assets=1)
+for a in starry/saturn.png starry/grooves.jpg starry/icons/house.svg; do
+  [[ -s "$XPUI/$a" ]] && pass "asset $a" || fail "asset $a missing (is overwrite_assets = 1?)"
+done
+
 # Fonts the theme expects
 fonts=$(system_profiler SPFontsDataType 2>/dev/null)
 for f in "Big Caslon" "Futura" "Avenir Next"; do
