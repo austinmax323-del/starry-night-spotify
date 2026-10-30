@@ -189,7 +189,7 @@
   function paint() {
     if (!tracks?.length) return;
     if (!ensure()) return setTimeout(paint, 600);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight, n = tracks.length;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25), W = innerWidth, H = innerHeight, n = tracks.length;
     const mv = document.querySelector(".Root__main-view")?.getBoundingClientRect();
     const mx = mv ? mv.left : 0, mw = mv ? mv.width : W;
     geo = { cx: mx + mw * 0.5, cy: H * 0.56, R: Math.min(mw * 0.42, H * 0.62) };
@@ -229,7 +229,7 @@
 
   function drawLit() {
     if (!ov || !pos.length) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25), W = innerWidth, H = innerHeight;
     const x = sizeCanvas(ov, W, H, dpr);
     wrap.classList.toggle("lit", !!lit?.size);
     if (!lit?.size) return;

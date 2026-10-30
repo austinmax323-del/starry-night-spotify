@@ -24,30 +24,51 @@ waitForElement(['.Root__top-container'], ([topContainer]) => {
   const rootElement = document.querySelector('.Root__top-container');
   rootElement.style.zIndex = '0';
 
-  // create the stars
-  const canvasSize =
-    backgroundContainer.clientWidth * backgroundContainer.clientHeight;
-  const starsFraction = canvasSize / 4000;
-  for (let i = 0; i < starsFraction; i++) {
-    const size = Math.random() < 0.5 ? 1 : 2;
+  // the stars: ONE canvas (was ~500 divs, each its own glow + compositing layer)
+  const sky = document.createElement('canvas');
+  sky.className = 'sfx-sky';
+  backgroundContainer.appendChild(sky);
+  const starRGB = (rs.getPropertyValue('--spice-star').trim() || '#ffffff');
+  let stars = [], sprite = null, W = 0, H = 0, lastDraw = 0;
+  const sctx = sky.getContext('2d');
 
-    const star = document.createElement('div');
-    star.style.position = 'absolute';
-    star.style.left = `${random(0, 99)}%`;
-    star.style.top = `${random(0, 99)}%`;
-    star.style.opacity = random(0.5, 1);
-    star.style.width = `${size}px`;
-    star.style.height = `${size}px`;
-    star.style.backgroundColor = rs.getPropertyValue('--spice-star');
-    star.style.zIndex = '-1';
-    star.style.borderRadius = '50%';
-
-    if (Math.random() < 1 / 5) {
-      star.style.setProperty("animation", `twinkle${Math.floor(Math.random() * 4) + 1} 5s infinite`, "important");
-    }
-
-    backgroundContainer.appendChild(star);
+  function makeSprite() {
+    sprite = document.createElement('canvas'); sprite.width = sprite.height = 24;
+    const g = sprite.getContext('2d'), grad = g.createRadialGradient(12, 12, 0, 12, 12, 12);
+    grad.addColorStop(0, starRGB); grad.addColorStop(0.18, starRGB); grad.addColorStop(0.2, 'rgba(255,255,255,.28)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 24, 24);
   }
+  function layout() {
+    W = backgroundContainer.clientWidth || innerWidth; H = backgroundContainer.clientHeight || innerHeight;
+    if (!W || !H) return false;
+    sky.width = W; sky.height = H;
+    const n = Math.round(W * H / 4000);
+    stars = [];
+    for (let i = 0; i < n; i++) {
+      stars.push({ x: random(0, 99) / 100 * W, y: random(0, 99) / 100 * H, r: Math.random() < 0.5 ? 1 : 2, a: random(0.5, 1),
+        tw: Math.random() < 0.2, ph: random(0, 6.28), sp: random(0.6, 1.6) });
+    }
+    return true;
+  }
+  function drawSky(t) {
+    if (!sprite) makeSprite();
+    sctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      const a = s.tw ? s.a * (0.62 + 0.38 * Math.sin(t * 0.0011 * s.sp + s.ph)) : s.a;
+      sctx.globalAlpha = a;
+      const d = s.r * 6; sctx.drawImage(sprite, s.x - d / 2, s.y - d / 2, d, d);
+    }
+    sctx.globalAlpha = 1;
+  }
+  if (layout()) drawSky(0);
+  // twinkle at ~8 fps; stills when the window is in the background, on battery, or with the sky effect off
+  setInterval(() => {
+    const b = document.body.classList;
+    if (document.hidden || b.contains('sfx-away') || b.contains('sfx-battery') || b.contains('sfx-off-drift')) return;
+    drawSky(performance.now());
+  }, 125);
+  let rz = 0;
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (layout()) drawSky(performance.now()); }, 250); });
 
   // handles resizing of playbar panel to match right sidebar below it
   const playbar = document.querySelector('.Root__now-playing-bar');

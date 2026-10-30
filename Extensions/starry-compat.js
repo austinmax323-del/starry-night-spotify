@@ -49,6 +49,18 @@
     add(widget, "main-nowPlayingWidget-nowPlaying");
     const slot = bar.querySelector('[data-testid="CoverSlotCollapsed__container"], [data-testid="cover-art-container"]');
     add(slot, "main-coverSlotCollapsed-container", "main-nowPlayingWidget-coverArt");
+    // tracks with a looping video / Canvas have no cover <img> in the slot, so the record had nothing to form from:
+    // add the cover as an image and hide the video
+    if (slot && !slot.querySelector("img") && slot.querySelector("video")) {
+      const md = Spicetify.Player?.data?.item?.metadata; // the square album art is audio_association_image_large; image_*_url is a 16:9 video still here
+      const u = md?.audio_association_image_large ? "spotify:image:" + md.audio_association_image_large : (md?.image_xlarge_url || md?.image_url || "");
+      const src = u.replace("spotify:image:", "https://i.scdn.co/image/");
+      let fb = slot.querySelector(".sfx-video-cover");
+      if (!fb && src) { // wrapper, so the image's parent can take the "cover-art" class like a normal cover
+        const w = document.createElement("div"); fb = document.createElement("img"); fb.className = "sfx-video-cover"; w.appendChild(fb); slot.prepend(w);
+      }
+      if (fb && src && fb.getAttribute("src") !== src) fb.src = src;
+    }
     const img = slot?.querySelector("img");
     if (img) { add(img, "cover-art-image", "main-image-image"); add(img.parentElement, "cover-art"); }
     const info = widget && widget.children[1];
@@ -98,7 +110,7 @@
     for (const card of document.querySelectorAll('[data-encore-id="card"]:not(.sfx-card)')) {
       // own names on purpose: Spotify still ships CSS for the old card class names, which would resize the cards
       add(card, "sfx-card");
-      const im = card.querySelector("img");
+      const im = card.querySelector("img"); if (im) im.decoding = "async";
       if (im) { add(im.parentElement, "sfx-card-imageWrapper"); add(im.parentElement?.parentElement, "sfx-card-imageContainer"); }
     }
     for (const s of document.querySelectorAll('[class*="x-settings-section"], [data-testid="settings-section"]')) add(s, "x-settings-section");
@@ -132,7 +144,7 @@
     const checks = {
       "page layout": !!q(".Root__top-container"),
       "floating dock": !!q('[data-sfx="nav"]'),
-      "star sky": document.querySelectorAll(".starrynight-bg-container > div").length > 50,
+      "star sky": !!document.querySelector(".starrynight-bg-container > canvas.sfx-sky"),
       "player bar": !!q(".Root__now-playing-bar .main-nowPlayingBar-container"),
       "record / cover": !!art && !!art.querySelector("img"),
       "record size": !!art && art.getBoundingClientRect().width > 150,
